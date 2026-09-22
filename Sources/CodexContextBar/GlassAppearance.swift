@@ -4,12 +4,13 @@ import SwiftUI
 /// Keep the blur at full strength; only the graphite backing changes opacity.
 struct GlassBackground: View {
     @AppStorage("glassTransparency") private var transparency = 0.65
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         ZStack {
-            FrostedWindowMaterial()
-            InspectorTheme.background.opacity(reduceTransparency ? 1 : 1 - min(max(transparency, 0), 0.85))
+            FrostedWindowMaterial(scheme: colorScheme)
+            InspectorTheme.background.opacity(reduceTransparency ? 1 : 1 - min(max(transparency, 0), 0.85) * 0.45)
             LinearGradient(colors: [.white.opacity(reduceTransparency ? 0 : 0.045), .clear], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
         .ignoresSafeArea()
@@ -19,15 +20,19 @@ struct GlassBackground: View {
 }
 
 private struct FrostedWindowMaterial: NSViewRepresentable {
+    let scheme: ColorScheme
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = WindowMaterialView()
-        view.material = .hudWindow
+        view.material = .sidebar
+        view.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
         view.blendingMode = .behindWindow
         view.state = .active
         return view
     }
 
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+    }
 
     private final class WindowMaterialView: NSVisualEffectView {
         override func viewDidMoveToWindow() {
@@ -75,7 +80,7 @@ struct GlassAppearancePanel: View {
                 Spacer()
                 Text("更通透")
             }.font(.caption).foregroundStyle(InspectorTheme.secondary)
-            Text(reduceTransparency ? "系统已开启“减少透明度”，当前使用实色背景。" : "即时应用到所有窗口并自动保存；文字与按钮保持不透明。")
+            Text(reduceTransparency ? "系统已开启“减少透明度”，当前使用实色背景。" : "跟随系统明暗主题。通透度即时保存，并保留可读底色；文字与按钮不透明。")
                 .font(.caption).foregroundStyle(InspectorTheme.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button("恢复默认") { transparency = 0.65 }
@@ -83,7 +88,7 @@ struct GlassAppearancePanel: View {
         .padding(22).frame(width: 290)
         .foregroundStyle(InspectorTheme.text)
         .background { GlassBackground() }
-        .preferredColorScheme(.dark)
+
         .tint(InspectorTheme.teal)
     }
 }

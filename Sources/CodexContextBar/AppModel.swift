@@ -134,11 +134,27 @@ final class AppModel {
         panel.directoryURL = codexHome
         NSApp.activate(ignoringOtherApps: true)
         if panel.runModal() == .OK, let url = panel.url {
-            codexHome = url.standardizedFileURL.resolvingSymlinksInPath()
-            defaults.set(codexHome.path, forKey: "codexHome")
-            clearProjectState()
-            Task { await refresh() }
+            do { try setCodexHome(url); Task { await refresh() } }
+            catch { self.error = error.localizedDescription }
         }
+    }
+
+    func setCodexHome(_ url: URL) throws {
+        let normalized = url.standardizedFileURL.resolvingSymlinksInPath()
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: normalized.appendingPathComponent("sessions").path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            throw ContextError.message("此目录不包含 sessions 文件夹。请选择 Codex 数据目录（通常为 ~/.codex），不是项目目录。当前读取来源未更改。")
+        }
+        codexHome = normalized
+        defaults.set(codexHome.path, forKey: "codexHome")
+        clearProjectState()
+    }
+
+    func restoreDefaultCodexHome() {
+        do {
+            try setCodexHome(URL(fileURLWithPath: ProcessInfo.processInfo.environment["CODEX_HOME"] ?? NSHomeDirectory() + "/.codex"))
+            Task { await refresh() }
+        } catch { self.error = error.localizedDescription }
     }
 
     func refresh() async {

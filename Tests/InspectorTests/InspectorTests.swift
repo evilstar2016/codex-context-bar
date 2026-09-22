@@ -154,6 +154,8 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     defer { fixture.cleanup() }
     fixture.model.isDesignPreview = true
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("inspector.png"))
+    try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("inspector-light.png"), scheme: .light)
+    try snapshot(MenuContent(model: fixture.model), size: CGSize(width: 316, height: 400), to: destination.appendingPathComponent("menu-light.png"), scheme: .light)
     try snapshot(MenuContent(model: fixture.model), size: CGSize(width: 316, height: 356), to: destination.appendingPathComponent("menu.png"))
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 880, height: 640), to: destination.appendingPathComponent("inspector-compact.png"))
     fixture.model.selectedKind = "plugins.recommendations"
@@ -175,11 +177,11 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
 }
 
 @MainActor
-private func snapshot<V: View>(_ view: V, size: CGSize, to url: URL) throws {
-    let content = view.environment(\.locale, Locale(identifier: "zh_CN")).environment(\.timeZone, TimeZone(identifier: "Asia/Shanghai")!)
+private func snapshot<V: View>(_ view: V, size: CGSize, to url: URL, scheme: ColorScheme = .dark) throws {
+    let content = view.environment(\.colorScheme, scheme).environment(\.locale, Locale(identifier: "zh_CN")).environment(\.timeZone, TimeZone(identifier: "Asia/Shanghai")!)
     let hosting = NSHostingView(rootView: content)
     let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
-    window.appearance = NSAppearance(named: .darkAqua)
+    window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
     window.contentView = hosting
     hosting.setFrameSize(size)
     hosting.layoutSubtreeIfNeeded()
@@ -223,4 +225,22 @@ private func snapshot<V: View>(_ view: V, size: CGSize, to url: URL) throws {
     #expect(InspectorItem.primary[0].observation(in: partial) == "部分观测")
     #expect(InspectorItem.primary[1].characters(in: partial) == nil)
     #expect(InspectorItem.primary[1].observation(in: partial) == "未知")
+}
+
+@Test @MainActor func dataDirectoryRejectsProjectWithoutChangingSource() throws {
+    let fixture = try InspectorFixture(pending: false)
+    defer { fixture.cleanup() }
+    let original = fixture.model.codexHome
+    do {
+        try fixture.model.setCodexHome(try #require(fixture.model.project))
+        Issue.record("Project directory must not replace Codex data directory")
+    } catch {
+        #expect(fixture.model.codexHome == original)
+        #expect(fixture.defaults.string(forKey: "codexHome") == original.path)
+    }
+    let home = fixture.root.appendingPathComponent("valid-home")
+    try FileManager.default.createDirectory(at: home.appendingPathComponent("sessions"), withIntermediateDirectories: true)
+    try fixture.model.setCodexHome(home)
+    #expect(fixture.model.codexHome == home.resolvingSymlinksInPath())
+    #expect(fixture.model.sessions.isEmpty)
 }

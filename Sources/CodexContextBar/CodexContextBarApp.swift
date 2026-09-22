@@ -61,6 +61,7 @@ struct MenuContent: View {
                     Button("刷新") { Task { await model.refresh() } }
                         .disabled(model.refreshing || model.project == nil)
                     Button("选择 Codex 数据目录…", action: model.chooseCodexHome)
+                    Button("恢复默认数据目录", action: model.restoreDefaultCodexHome)
                     Button("退出 Context Bar") { NSApp.terminate(nil) }
                 } label: { Image(systemName: "ellipsis").font(.system(size: 12)) }
                 .menuStyle(.borderlessButton).frame(width: 18).accessibilityLabel("更多选项")
@@ -78,7 +79,7 @@ struct MenuContent: View {
         .padding(22).frame(width: 316)
         .background { GlassBackground() }
         .foregroundStyle(InspectorTheme.text)
-        .preferredColorScheme(.dark)
+
         .tint(InspectorTheme.teal)
     }
 

@@ -4,7 +4,7 @@ import SwiftUI
 
 struct Dashboard: View {
     @Bindable var model: AppModel
-    @State private var expandedOthers = false
+    @State private var expandedOthers = true
     @State private var showingEvidence = false
     @State private var undoCandidate: ConfigOperation?
 
@@ -23,7 +23,7 @@ struct Dashboard: View {
         }
         .background { GlassBackground() }
         .foregroundStyle(InspectorTheme.text)
-        .preferredColorScheme(.dark)
+
         .tint(InspectorTheme.teal)
         .frame(minWidth: 880, minHeight: 640)
         .toolbar { InspectorToolbar(model: model) }
@@ -92,7 +92,7 @@ struct Dashboard: View {
                                         .font(.system(size: 13)).frame(width: 20)
                                     Text("其他会话说明").frame(maxWidth: .infinity, alignment: .leading)
                                     Text("\(otherItems.count) 项").frame(width: 84, alignment: .leading)
-                                    Text("—").frame(width: 80, alignment: .trailing)
+                                    Text(otherItems.compactMap { $0.characters(in: model.selected) }.reduce(0, +).formatted()).monospacedDigit().frame(width: 80, alignment: .trailing)
                                 }
                                 .font(.system(size: 15)).foregroundStyle(InspectorTheme.secondary)
                                 .padding(.horizontal, 20).frame(minHeight: 62).contentShape(Rectangle())
@@ -106,11 +106,20 @@ struct Dashboard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(InspectorTheme.line))
 
-                    if let warning = model.warning { inlineNotice(warning) }
+
                 }
                 .scrollIndicators(.visible)
             }
-            Spacer(minLength: 24)
+            if let warning = model.warning {
+                inlineNotice(warning)
+                if model.sessions.isEmpty {
+                    Button("恢复默认数据目录", action: model.restoreDefaultCodexHome).padding(.top, 8)
+                }
+            }
+            Text("读取来源：\(model.codexHome.path)")
+                .font(.caption).foregroundStyle(InspectorTheme.secondary)
+                .textSelection(.enabled).lineLimit(2).truncationMode(.middle).padding(.top, 12)
+            Spacer(minLength: 16)
             HStack {
                 Text(totalLabel)
                 Spacer()

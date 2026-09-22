@@ -78,7 +78,7 @@ scripts/build-app.sh       构建并本地签名 .app
 
 ![原生 SwiftUI 检查器](docs/design/inspector.png)
 
-图片来自实际 SwiftUI 视图与合成测试数据，不包含用户会话。28 项自动化测试覆盖核心逻辑与界面状态；可选原生布局快照：
+图片来自实际 SwiftUI 视图与合成测试数据，不包含用户会话。29 项自动化测试覆盖核心逻辑与界面状态；可选原生布局快照：
 
 ```sh
 CONTEXT_BAR_SNAPSHOT_DIR=/tmp/context-bar-snapshots swift test
@@ -93,3 +93,5 @@ CONTEXT_BAR_SNAPSHOT_DIR=/tmp/context-bar-snapshots swift test
 会话头读取在完整证据或明确不完整的判定点立即结束，避免继续扫描正文；分块读取只解析完整 JSON 行。刷新时工具栏显示加载状态。
 
 默认选择最近的完整初始会话头，保留手动选择。继承或不完整记录展示原因及切换完整会话的入口；仅对已观测到的块显示部分数据，缺失内容保持未知。项目与会话名称固定展示在内容选择栏。
+
+数据目录选择会检查 sessions 子目录，拒绝普通项目目录；空状态会显示读取来源和错误原因，并提供恢复默认目录入口。界面跟随系统明暗主题，高通透度仍保留可读底色。其他会话说明默认展开并展示字符合计。

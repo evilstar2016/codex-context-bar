@@ -41,3 +41,7 @@ Window, menu panel and sheets now use NSVisualEffectView with behind-window blen
 ## Session selection and layout correction
 
 Removed the duplicate toolbar title; moved project and session labels into a persistent content bar to prevent macOS icon-only toolbar compression. Default selection prefers complete headers. Incomplete records expose the reason and an action to select complete evidence; unknown totals no longer display zero. Valid partial block observations remain visible. Compact 880×640 content snapshots checked; native window chrome still requires live verification.
+
+## Light appearance and data-source correction
+
+Verified separate Aqua/Dark Aqua native snapshots for both inspector and menu. Semantic dynamic colors replace fixed white labels; material appearance follows SwiftUI color scheme. Backing opacity retains a readability floor. Invalid data directories are rejected before persisting, and missing-session warnings remain visible in empty states. Real read-only scan of the correct local source returned 30 sessions, three complete, with 10,769 characters in the default complete header. No transcript content was captured or committed. Offscreen captures cannot prove desktop compositing.
