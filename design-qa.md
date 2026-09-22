@@ -33,3 +33,7 @@ Selected source and final actual-view captures were opened in the same tool call
 Evidence: `docs/design/inspector.png`, `menu.png`, `inspector-compact.png`, `recommendations.png`, `empty.png`, `config-preview.png`. Main 1048×786, compact 880×640, menu 316×356, preview 570×540. All 25 isolated Swift tests pass, including native snapshot rendering. The snapshots are synthetic fixtures, not live user-session captures.
 
 final result: passed (app-content visual QA and automated state verification). Live native toolbar/menu interaction QA is not completed because the capture connection times out.
+
+## Frosted-glass update
+
+Window, menu panel and sheets now use NSVisualEffectView with behind-window blending. The persistent 0–85% slider adjusts graphite backing opacity, leaving text and controls opaque. Reduce Transparency forces a solid backing. Offscreen snapshots validate layout only: WindowServer background blur requires an on-screen window and is not proven by bitmap rendering. The earlier opaque screenshots document the previous design.

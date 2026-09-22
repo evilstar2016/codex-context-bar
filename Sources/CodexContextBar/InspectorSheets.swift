@@ -32,7 +32,7 @@ struct ConfigPreviewSheet: View {
             }
         }
         .padding(30).frame(width: 570)
-        .foregroundStyle(InspectorTheme.text).background(InspectorTheme.background).preferredColorScheme(.dark)
+        .foregroundStyle(InspectorTheme.text).background { GlassBackground() }.preferredColorScheme(.dark)
     }
 }
 
@@ -74,7 +74,7 @@ struct OperationHistorySheet: View {
                 }.frame(maxHeight: 400)
             }
         }.padding(30).frame(width: 640)
-        .foregroundStyle(InspectorTheme.text).background(InspectorTheme.background).preferredColorScheme(.dark)
+        .foregroundStyle(InspectorTheme.text).background { GlassBackground() }.preferredColorScheme(.dark)
         .alert("撤销这次配置修改？", isPresented: Binding(get: { undoCandidate != nil }, set: { if !$0 { undoCandidate = nil } })) {
             Button("取消", role: .cancel) { undoCandidate = nil }
             Button("撤销") { if let operation = undoCandidate { model.undo(operation) }; undoCandidate = nil }

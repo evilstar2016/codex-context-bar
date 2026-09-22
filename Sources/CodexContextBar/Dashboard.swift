@@ -17,7 +17,7 @@ struct Dashboard: View {
                     .frame(minWidth: 340, idealWidth: 420, maxWidth: 420, maxHeight: .infinity)
             }
         }
-        .background(InspectorTheme.background)
+        .background { GlassBackground() }
         .foregroundStyle(InspectorTheme.text)
         .preferredColorScheme(.dark)
         .tint(InspectorTheme.teal)
@@ -85,7 +85,7 @@ struct Dashboard: View {
                             if expandedOthers { ForEach(otherItems) { item in itemRow(item) } }
                         }
                     }
-                    .background(InspectorTheme.background)
+                    .background(.white.opacity(0.025))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(InspectorTheme.line))
                     if let issue = model.selected?.issue { inlineNotice(issue) }

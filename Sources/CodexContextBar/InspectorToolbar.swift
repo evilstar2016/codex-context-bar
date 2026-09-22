@@ -45,6 +45,7 @@ struct InspectorToolbar: ToolbarContent {
             Button { Task { await model.refresh() } } label: {
                 Image(systemName: "arrow.clockwise")
             }.disabled(model.refreshing || model.project == nil).help("检查新的会话记录").accessibilityLabel("刷新会话")
+            GlassAppearanceControl()
             Menu {
                 Button("修改记录") { model.showingHistory = true }
                 Button("选择 Codex 数据目录…", action: model.chooseCodexHome)

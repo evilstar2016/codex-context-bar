@@ -149,6 +149,7 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     guard let path = ProcessInfo.processInfo.environment["CONTEXT_BAR_SNAPSHOT_DIR"] else { return }
     let destination = URL(fileURLWithPath: path)
     try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    try snapshot(GlassAppearancePanel(), size: CGSize(width: 290, height: 270), to: destination.appendingPathComponent("appearance.png"))
     let fixture = try InspectorFixture()
     defer { fixture.cleanup() }
     fixture.model.isDesignPreview = true

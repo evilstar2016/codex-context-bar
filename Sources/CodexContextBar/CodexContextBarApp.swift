@@ -56,6 +56,7 @@ struct MenuContent: View {
                 Text(model.lastRefresh.map { "本地读取 · \($0.formatted(date: .omitted, time: .shortened)) 更新" } ?? "本地读取 · 每分钟检查一次")
                     .font(.system(size: 11)).foregroundStyle(InspectorTheme.secondary)
                 Spacer(minLength: 0)
+                GlassAppearanceControl()
                 Menu {
                     Button("刷新") { Task { await model.refresh() } }
                         .disabled(model.refreshing || model.project == nil)
@@ -75,7 +76,7 @@ struct MenuContent: View {
             }
         }
         .padding(22).frame(width: 316)
-        .background(InspectorTheme.background)
+        .background { GlassBackground() }
         .foregroundStyle(InspectorTheme.text)
         .preferredColorScheme(.dark)
         .tint(InspectorTheme.teal)

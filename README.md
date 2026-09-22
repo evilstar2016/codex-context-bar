@@ -85,3 +85,7 @@ CONTEXT_BAR_SNAPSHOT_DIR=/tmp/context-bar-snapshots swift test
 ```
 
 设计对照与验证边界见 [design-qa.md](design-qa.md)。
+
+## 磨砂玻璃外观
+
+主窗口和菜单栏面板使用 macOS 原生背景模糊。点击工具栏或菜单栏面板底部的半圆图标，可实时调整背景透明度（0–85%，默认 65%），并自动保存到应用偏好设置。文字和按钮不随背景变透明。系统开启“减少透明度”时使用实色背景。
