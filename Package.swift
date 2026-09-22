@@ -13,5 +13,6 @@ let package = Package(
         .target(name: "ContextCore", dependencies: [.product(name: "TOMLDecoder", package: "TOMLDecoder")]),
         .executableTarget(name: "CodexContextBar", dependencies: ["ContextCore"]),
         .testTarget(name: "ContextCoreTests", dependencies: ["ContextCore"]),
+        .testTarget(name: "InspectorTests", dependencies: ["CodexContextBar"]),
     ]
 )

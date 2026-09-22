@@ -27,7 +27,12 @@ public struct ConfigOperation: Codable, Identifiable, Sendable {
     public var restored: Bool
 }
 
+public enum VerificationState: String, Sendable {
+    case waiting, observed, mismatch, configChanged, restored
+}
+
 public struct Verification: Sendable {
+    public let state: VerificationState
     public let matched: Bool?
     public let message: String
     public let sessionID: String?
@@ -110,20 +115,20 @@ public struct OperationStore: Sendable {
 
     public func verify(_ operation: ConfigOperation, project: URL, sessions: [SessionHeader]) throws -> Verification {
         guard !operation.restored else {
-            return Verification(matched: nil, message: "已撤销；恢复效果仍需新会话观察", sessionID: nil)
+            return Verification(state: .restored, matched: nil, message: "已撤销；恢复效果仍需新会话观察", sessionID: nil)
         }
         guard operation.project == canonicalPath(project), try fingerprint(project) == operation.fingerprint else {
-            return Verification(matched: nil, message: "配置已变化，原操作无法继续验证", sessionID: nil)
+            return Verification(state: .configChanged, matched: nil, message: "配置已变化，原操作无法继续验证", sessionID: nil)
         }
         guard let fresh = sessions.filter({
             $0.complete && $0.project == operation.project && $0.date > operation.createdAt
                 && $0.id != operation.baselineID && $0.source == operation.source
         }).max(by: { $0.date < $1.date }) else {
-            return Verification(matched: nil, message: "待验证：请在 Codex Desktop 的同一项目目录新建任务", sessionID: nil)
+            return Verification(state: .waiting, matched: nil, message: "待验证：请在 Codex Desktop 的同一项目目录新建任务", sessionID: nil)
         }
         let present = fresh.contains(operation.target)
         let matches = present == operation.enabled
-        return Verification(matched: matches,
+        return Verification(state: matches ? .observed : .mismatch, matched: matches,
             message: matches ? "新任务观测符合预期（不证明唯一因果）" : "新任务观测不符合预期；可能存在配置覆盖或功能条件",
             sessionID: fresh.id)
     }

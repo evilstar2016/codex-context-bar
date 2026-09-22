@@ -16,7 +16,7 @@ open 'build/Codex Context Bar.app'
 
 也可在 Xcode 打开 `Package.swift`。构建脚本生成本机架构的 `.app`，默认 ad-hoc 签名，仅用于本机开发；尚未提供 Developer ID 公证或自动更新。站外发布需要有效签名、公证和 Intel/Apple Silicon 兼容测试。
 
-首次启动，在菜单栏点击图标 → 选择项目 → 打开详情。默认读取 `~/.codex`，支持 `CODEX_HOME`（启动进程的环境变量）或在界面选择数据目录。Finder 启动不一定继承 shell 环境。
+首次启动，在菜单栏点击图标 → 选择项目 → 打开检查器。默认读取 `~/.codex`，支持 `CODEX_HOME`（启动进程的环境变量）或在界面选择数据目录。Finder 启动不一定继承 shell 环境。
 
 ## 已实现
 
@@ -71,3 +71,17 @@ scripts/build-app.sh       构建并本地签名 .app
 ```
 
 后续重点：精确 Token 计量、文件事件驱动扫描、更多说明块的可控性、版本兼容样本，以及签名发布。
+
+## 界面设计与验证
+
+采用深石墨色双栏检查器：左侧选择会话内容，右侧分别呈现已保存配置、历史观测和新任务验证状态。菜单栏只汇总每个控制项最新一次操作；推荐插件保持只读观察。
+
+![原生 SwiftUI 检查器](docs/design/inspector.png)
+
+图片来自实际 SwiftUI 视图与合成测试数据，不包含用户会话。25 项自动化测试覆盖核心逻辑与界面状态；可选原生布局快照：
+
+```sh
+CONTEXT_BAR_SNAPSHOT_DIR=/tmp/context-bar-snapshots swift test
+```
+
+设计对照与验证边界见 [design-qa.md](design-qa.md)。

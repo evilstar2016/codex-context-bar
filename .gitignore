@@ -6,3 +6,5 @@ build/
 xcuserdata/
 *.jsonl
 .env
+
+.serena/
