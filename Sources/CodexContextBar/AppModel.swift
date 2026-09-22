@@ -143,6 +143,7 @@ final class AppModel {
         guard !isDesignPreview, !refreshing, let project else { return }
         let home = codexHome
         refreshing = true
+        error = nil
         defer { refreshing = false }
         do {
             let scan = try await repository.scan(codexHome: home, project: project)

@@ -13,19 +13,28 @@ public enum HeaderParser {
             let chunk = try handle.read(upToCount: min(65_536, byteLimit - data.count)) ?? Data()
             if chunk.isEmpty { break }
             data.append(chunk)
-            result = parse(data, file: url)
-            if result?.complete == true || result?.issue == "继承或分页增量，不能证明 block 缺席" { break }
+            // A chunk may split a JSON record. Only complete lines can yield a terminal decision.
+            guard let end = data.lastIndex(of: 10) else { continue }
+            var finished = false
+            result = parse(Data(data.prefix(through: end)), file: url, finished: &finished)
+            if finished { break }
         }
         return result
     }
 
     public static func parse(_ data: Data, file: URL) -> SessionHeader? {
+        var finished = false
+        return parse(data, file: file, finished: &finished)
+    }
+
+    private static func parse(_ data: Data, file: URL, finished: inout Bool) -> SessionHeader? {
         var header: SessionHeader?
         var expected = 0
         var roles = Set<String>()
         var fullState = false
         var counts: [String: (kind: String, role: String, characters: Int)] = [:]
         for line in data.split(separator: 10) {
+            finished = true
             guard !line.allSatisfy({ $0 == 13 || $0 == 32 || $0 == 9 }) else { continue }
             guard let item = (try? JSONSerialization.jsonObject(with: Data(line))) as? [String: Any],
                   let type = item["type"] as? String,
@@ -65,17 +74,20 @@ public enum HeaderParser {
                 if complete { header?.issue = nil }
                 return header
             }
+            finished = false
             guard type == "response_item", let role = payload["role"] as? String,
                   ["developer", "user"].contains(role) else { continue }
             let metadata = payload["internal_chat_message_metadata_passthrough"] as? [String: Any]
             guard let kinds = metadata?["content_item_kinds"] as? [String],
                   let content = payload["content"] as? [[String: Any]], kinds.count == content.count else {
+                finished = true
                 header?.issue = "缺少可信 content item metadata"
                 return header
             }
             roles.insert(role)
             for (kind, part) in zip(kinds, content) {
                 guard let text = part["text"] as? String else {
+                    finished = true
                     header?.issue = "无法识别会话头内容"
                     return header
                 }

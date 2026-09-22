@@ -43,7 +43,8 @@ struct InspectorToolbar: ToolbarContent {
                 Label(model.selected?.date.formatted(date: .abbreviated, time: .shortened) ?? "选择会话", systemImage: "calendar")
             }.disabled(model.sessions.isEmpty).accessibilityLabel("选择观察会话")
             Button { Task { await model.refresh() } } label: {
-                Image(systemName: "arrow.clockwise")
+                if model.refreshing { ProgressView().controlSize(.small) }
+                else { Image(systemName: "arrow.clockwise") }
             }.disabled(model.refreshing || model.project == nil).help("检查新的会话记录").accessibilityLabel("刷新会话")
             GlassAppearanceControl()
             Menu {

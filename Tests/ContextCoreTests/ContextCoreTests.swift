@@ -211,3 +211,20 @@ private final class Workspace {
     let changed = try await repository.scan(codexHome: workspace.home, project: workspace.project)
     #expect(changed.sessions.first?.contains(.skillCatalog) == false)
 }
+
+@Test func readerHandlesChunkBoundariesAndStopsAtInitialEvidence() throws {
+    let workspace = try Workspace()
+    let file = workspace.root.appendingPathComponent("large.jsonl")
+    var text = String(decoding: try fixture(), as: UTF8.self)
+    text = text.replacingOccurrences(of: "Body for generic.developer_instructions", with: String(repeating: "x", count: 100_000))
+    try Data((text + String(repeating: "not JSON\n", count: 200_000)).utf8).write(to: file)
+    let header = try #require(try HeaderParser.read(file))
+    #expect(header.complete)
+    #expect(header.characters > 100_000)
+
+    let incomplete = text.replacingOccurrences(of: "content_item_kinds", with: "unknown_metadata")
+    try Data((incomplete + String(repeating: "not JSON\n", count: 200_000)).utf8).write(to: file)
+    let unknown = try #require(try HeaderParser.read(file))
+    #expect(!unknown.complete)
+    #expect(unknown.issue == "缺少可信 content item metadata")
+}

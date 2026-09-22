@@ -78,7 +78,7 @@ scripts/build-app.sh       构建并本地签名 .app
 
 ![原生 SwiftUI 检查器](docs/design/inspector.png)
 
-图片来自实际 SwiftUI 视图与合成测试数据，不包含用户会话。25 项自动化测试覆盖核心逻辑与界面状态；可选原生布局快照：
+图片来自实际 SwiftUI 视图与合成测试数据，不包含用户会话。26 项自动化测试覆盖核心逻辑与界面状态；可选原生布局快照：
 
 ```sh
 CONTEXT_BAR_SNAPSHOT_DIR=/tmp/context-bar-snapshots swift test
@@ -89,3 +89,5 @@ CONTEXT_BAR_SNAPSHOT_DIR=/tmp/context-bar-snapshots swift test
 ## 磨砂玻璃外观
 
 主窗口和菜单栏面板使用 macOS 原生背景模糊。点击工具栏或菜单栏面板底部的半圆图标，可实时调整背景透明度（0–85%，默认 65%），并自动保存到应用偏好设置。文字和按钮不随背景变透明。系统开启“减少透明度”时使用实色背景。
+
+会话头读取在完整证据或明确不完整的判定点立即结束，避免继续扫描正文；分块读取只解析完整 JSON 行。刷新时工具栏显示加载状态。

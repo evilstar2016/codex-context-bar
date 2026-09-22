@@ -287,7 +287,7 @@ struct Dashboard: View {
         }
     }
     private var sessionSubtitle: String {
-        guard let session = model.selected else { return "本地读取 · 配置与实际观测分开展示" }
+        guard let session = model.selected else { return model.refreshing ? "正在读取所选项目的会话…" : "本地读取 · 配置与实际观测分开展示" }
         return "\(session.complete ? "完整会话头" : "不完整会话头") · \(session.date.formatted(.dateTime.month(.twoDigits).day(.twoDigits).hour().minute()))"
     }
     private var totalLabel: String {
