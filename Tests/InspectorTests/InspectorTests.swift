@@ -162,6 +162,14 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     let baseline = try #require(fixture.model.selected)
     let preview = try fixture.model.store.preview(project: project, baseline: baseline, target: .memory, enabled: false)
     try snapshot(ConfigPreviewSheet(model: fixture.model, preview: preview), size: CGSize(width: 570, height: 540), to: destination.appendingPathComponent("config-preview.png"))
+    var inherited = try #require(fixture.model.selected)
+    inherited.id = "inherited-preview"
+    inherited.complete = false
+    inherited.blocks = []
+    inherited.issue = "继承或分页增量，不能证明 block 缺席"
+    fixture.model.sessions.insert(inherited, at: 0)
+    fixture.model.selectedID = inherited.id
+    try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 880, height: 640), to: destination.appendingPathComponent("incomplete.png"))
     fixture.model.sessions = []; fixture.model.project = nil; fixture.model.operations = []; fixture.model.verification = [:]; fixture.model.configuredValues = [:]
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("empty.png"))
 }
@@ -185,4 +193,34 @@ private func snapshot<V: View>(_ view: V, size: CGSize, to url: URL) throws {
     let data = try #require(bitmap.representation(using: .png, properties: [:]))
     try data.write(to: url)
     window.contentView = nil
+}
+
+@Test @MainActor func defaultSelectionPrefersCompleteEvidenceAndPreservesManualSelection() throws {
+    let fixture = try InspectorFixture(pending: false)
+    defer { fixture.cleanup() }
+    let complete = try #require(fixture.model.selected)
+    var inherited = complete
+    inherited.id = "inherited"
+    inherited.complete = false
+    inherited.blocks = []
+    inherited.issue = "继承或分页增量，不能证明 block 缺席"
+    fixture.model.sessions = [inherited, complete]
+    fixture.model.selectedID = nil
+    #expect(fixture.model.selected?.id == complete.id)
+    fixture.model.selectedID = inherited.id
+    #expect(fixture.model.selected?.id == inherited.id)
+    fixture.model.selectUsableSession()
+    #expect(fixture.model.selected?.id == complete.id)
+}
+
+@Test @MainActor func partialEvidenceShowsObservedBlocksWithoutClaimingAbsence() throws {
+    let fixture = try InspectorFixture(pending: false)
+    defer { fixture.cleanup() }
+    var partial = try #require(fixture.model.selected)
+    partial.complete = false
+    partial.blocks = partial.blocks.filter { $0.kind == "host_skills.instructions" }
+    #expect(InspectorItem.primary[0].characters(in: partial) == 6840)
+    #expect(InspectorItem.primary[0].observation(in: partial) == "部分观测")
+    #expect(InspectorItem.primary[1].characters(in: partial) == nil)
+    #expect(InspectorItem.primary[1].observation(in: partial) == "未知")
 }

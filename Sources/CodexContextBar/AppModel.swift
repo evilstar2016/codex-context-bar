@@ -26,7 +26,9 @@ final class AppModel {
     private let defaults: UserDefaults
     private let operationDirectory: URL?
 
-    var selected: SessionHeader? { sessions.first { $0.id == selectedID } ?? sessions.first }
+    var preferredSession: SessionHeader? { sessions.first(where: \.complete) ?? sessions.first(where: { !$0.blocks.isEmpty }) ?? sessions.first }
+    func selectUsableSession() { selectedID = preferredSession?.id }
+    var selected: SessionHeader? { sessions.first { $0.id == selectedID } ?? preferredSession }
     var selectedItem: InspectorItem {
         InspectorItem.items(in: selected).first { $0.id == selectedKind } ?? InspectorItem.primary[0]
     }
@@ -154,7 +156,7 @@ final class AppModel {
             loadConfiguration()
             sessions = scan.sessions
             warning = scan.warning
-            if !sessions.contains(where: { $0.id == selectedID }) { selectedID = sessions.first?.id }
+            if !sessions.contains(where: { $0.id == selectedID }) { selectUsableSession() }
             operations = try store.operations(project: project)
             verification = try Dictionary(uniqueKeysWithValues: operations.map {
                 ($0.id, try store.verify($0, project: project, sessions: sessions))

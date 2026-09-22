@@ -37,3 +37,7 @@ final result: passed (app-content visual QA and automated state verification). L
 ## Frosted-glass update
 
 Window, menu panel and sheets now use NSVisualEffectView with behind-window blending. The persistent 0–85% slider adjusts graphite backing opacity, leaving text and controls opaque. Reduce Transparency forces a solid backing. Offscreen snapshots validate layout only: WindowServer background blur requires an on-screen window and is not proven by bitmap rendering. The earlier opaque screenshots document the previous design.
+
+## Session selection and layout correction
+
+Removed the duplicate toolbar title; moved project and session labels into a persistent content bar to prevent macOS icon-only toolbar compression. Default selection prefers complete headers. Incomplete records expose the reason and an action to select complete evidence; unknown totals no longer display zero. Valid partial block observations remain visible. Compact 880×640 content snapshots checked; native window chrome still requires live verification.

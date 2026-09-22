@@ -9,13 +9,17 @@ struct Dashboard: View {
     @State private var undoCandidate: ConfigOperation?
 
     var body: some View {
-        GeometryReader { geometry in
+        VStack(spacing: 0) {
+            SessionSelectionBar(model: model)
+            InspectorDivider()
+            GeometryReader { geometry in
             HSplitView {
                 overview
                     .frame(minWidth: 470, idealWidth: 628, maxWidth: .infinity, maxHeight: .infinity)
                 inspector(compact: geometry.size.height < 720)
                     .frame(minWidth: 340, idealWidth: 420, maxWidth: 420, maxHeight: .infinity)
             }
+        }
         }
         .background { GlassBackground() }
         .foregroundStyle(InspectorTheme.text)
@@ -43,7 +47,20 @@ struct Dashboard: View {
                     .font(.system(size: 30, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(sessionSubtitle).font(.system(size: 15)).foregroundStyle(InspectorTheme.secondary)
-            }.padding(.bottom, 40)
+            }.padding(.bottom, 20)
+            if let session = model.selected, !session.complete {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("当前记录不是完整会话头", systemImage: "info.circle").font(.headline)
+                    Text(session.issue ?? "无法判断未出现的内容是否被关闭。")
+                        .font(.caption).fixedSize(horizontal: false, vertical: true)
+                    if let usable = model.preferredSession, usable.complete {
+                        Button("查看最近完整会话 · \(usable.date.formatted(date: .abbreviated, time: .shortened))") { model.selectUsableSession() }
+                    }
+                }.foregroundStyle(InspectorTheme.amber).padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(InspectorTheme.amber.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.bottom, 16)
+            }
 
             if model.project == nil {
                 emptyState(title: "先选择一个项目", description: "读取本机 Codex 会话记录，观察初始上下文与配置是否一致。", symbol: "folder") {
@@ -63,7 +80,7 @@ struct Dashboard: View {
                             Text("字符").frame(width: 80, alignment: .trailing)
                         }
                         .font(.system(size: 13)).foregroundStyle(InspectorTheme.secondary)
-                        .padding(.horizontal, 20).frame(height: 44)
+                        .padding(.horizontal, 20).frame(height: 38)
                         InspectorDivider()
                         ForEach(InspectorItem.primary) { item in itemRow(item) }
                         if !otherItems.isEmpty {
@@ -88,10 +105,10 @@ struct Dashboard: View {
                     .background(.white.opacity(0.025))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(InspectorTheme.line))
-                    if let issue = model.selected?.issue { inlineNotice(issue) }
+
                     if let warning = model.warning { inlineNotice(warning) }
                 }
-                .scrollIndicators(.hidden)
+                .scrollIndicators(.visible)
             }
             Spacer(minLength: 24)
             HStack {
@@ -101,7 +118,7 @@ struct Dashboard: View {
             }
             .font(.system(size: 13)).foregroundStyle(InspectorTheme.secondary)
         }
-        .padding(.horizontal, 30).padding(.top, 28).padding(.bottom, 40)
+        .padding(.horizontal, 30).padding(.top, 28).padding(.bottom, 24)
     }
 
     private func itemRow(_ item: InspectorItem) -> some View {
@@ -119,7 +136,7 @@ struct Dashboard: View {
                         .monospacedDigit().frame(width: 80, alignment: .trailing)
                 }
                 .font(.system(size: 15))
-                .padding(.horizontal, 20).frame(minHeight: 64)
+                .padding(.horizontal, 20).frame(minHeight: 56)
                 .background(model.selectedKind == item.id ? InspectorTheme.selection : .clear)
                 .contentShape(Rectangle())
             }
@@ -292,6 +309,7 @@ struct Dashboard: View {
     }
     private var totalLabel: String {
         guard let session = model.selected else { return "数据仅在本机处理" }
+        if !session.complete && session.blocks.isEmpty { return "无可用会话头数据 · 不代表 0 字符" }
         return "\(session.complete ? "已观测" : "部分观测") \(session.characters.formatted()) 字符"
     }
     private var otherItems: [InspectorItem] { Array(InspectorItem.items(in: model.selected).dropFirst(4)) }

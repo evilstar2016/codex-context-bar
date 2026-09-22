@@ -24,12 +24,13 @@ struct InspectorItem: Identifiable, Equatable {
     }
 
     func characters(in session: SessionHeader?) -> Int? {
-        guard let session, session.complete else { return nil }
+        guard let session, session.complete || session.blocks.contains(where: { $0.kind == id }) else { return nil }
         return session.blocks.filter { $0.kind == id }.reduce(0) { $0 + $1.characters }
     }
 
     func observation(in session: SessionHeader?) -> String {
-        guard let session, session.complete else { return "未知" }
+        guard let session else { return "未知" }
+        if !session.complete { return session.blocks.contains { $0.kind == id } ? "部分观测" : "未知" }
         return session.blocks.contains { $0.kind == id } ? "存在" : "未观察到"
     }
 

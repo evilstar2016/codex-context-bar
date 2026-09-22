@@ -25,23 +25,7 @@ struct ProjectMenu: View {
 struct InspectorToolbar: ToolbarContent {
     @Bindable var model: AppModel
     var body: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            Text("Context Bar").font(.system(size: 17, weight: .medium))
-        }
         ToolbarItemGroup(placement: .primaryAction) {
-            ProjectMenu(model: model).frame(maxWidth: 200)
-            Menu {
-                if model.sessions.isEmpty { Text("暂无会话") }
-                ForEach(model.sessions) { session in
-                    Button {
-                        model.selectedID = session.id
-                    } label: {
-                        Text("\(session.date.formatted(date: .abbreviated, time: .shortened)) · \(session.id.prefix(8)) · \(session.complete ? "完整" : "不完整")")
-                    }
-                }
-            } label: {
-                Label(model.selected?.date.formatted(date: .abbreviated, time: .shortened) ?? "选择会话", systemImage: "calendar")
-            }.disabled(model.sessions.isEmpty).accessibilityLabel("选择观察会话")
             Button { Task { await model.refresh() } } label: {
                 if model.refreshing { ProgressView().controlSize(.small) }
                 else { Image(systemName: "arrow.clockwise") }
@@ -53,5 +37,31 @@ struct InspectorToolbar: ToolbarContent {
             } label: { Image(systemName: "ellipsis.circle") }
             .accessibilityLabel("更多选项")
         }
+    }
+}
+
+struct SessionSelectionBar: View {
+    @Bindable var model: AppModel
+    var body: some View {
+        HStack(spacing: 16) {
+            ProjectMenu(model: model).labelStyle(.titleAndIcon).frame(maxWidth: 240, alignment: .leading)
+            Divider().frame(height: 20)
+            Menu {
+                if model.sessions.isEmpty { Text("暂无会话") }
+                ForEach(model.sessions) { session in
+                    Button { model.selectedID = session.id } label: {
+                        Text("\(session.id == model.selected?.id ? "✓ " : "")\(session.date.formatted(date: .abbreviated, time: .shortened)) · \(session.id.suffix(8)) · \(session.complete ? "完整" : "不完整")")
+                    }
+                }
+            } label: {
+                Label(model.selected.map { "\($0.date.formatted(date: .abbreviated, time: .shortened)) · \($0.complete ? "完整" : "不完整")" } ?? "选择会话", systemImage: "calendar")
+            }.disabled(model.sessions.isEmpty).labelStyle(.titleAndIcon)
+            Spacer(minLength: 0)
+            Text("\(model.sessions.count) 个会话").font(.caption).foregroundStyle(InspectorTheme.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .tint(InspectorTheme.text)
+        .padding(.horizontal, 24).padding(.vertical, 14)
+        .background(.white.opacity(0.035))
     }
 }
