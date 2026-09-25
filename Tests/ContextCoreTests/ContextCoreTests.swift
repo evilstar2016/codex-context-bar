@@ -212,6 +212,66 @@ private final class Workspace {
     #expect(changed.sessions.first?.contains(.skillCatalog) == false)
 }
 
+@Test func savingsSummaryUsesCompleteHeadersAndRollingWindows() throws {
+    let workspace = try Workspace()
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let allKinds = ControlTarget.allCases.flatMap(\.kinds)
+    func header(_ id: String, project: String, daysAgo: Int, kinds: [String], inherited: Bool = false) throws -> SessionHeader {
+        try #require(HeaderParser.parse(fixture(project: project, id: id,
+            date: now.addingTimeInterval(TimeInterval(-daysAgo * 86_400)), kinds: kinds, inherited: inherited),
+            file: workspace.root.appendingPathComponent(id + ".jsonl")))
+    }
+    let sessions = try [
+        header("current", project: workspace.project.path, daysAgo: 2, kinds: allKinds),
+        header("other", project: "/another", daysAgo: 7, kinds: ["host_skills.instructions"]),
+        header("older", project: workspace.project.path, daysAgo: 20, kinds: ["memories.instructions", "plugins.usage_instructions"]),
+        header("partial", project: workspace.project.path, daysAgo: 1, kinds: allKinds, inherited: true),
+        header("expired", project: workspace.project.path, daysAgo: 31, kinds: allKinds),
+        header("future", project: workspace.project.path, daysAgo: -1, kinds: allKinds),
+    ]
+    let summary = SavingsSummary(sessions: sessions, project: workspace.project, now: now)
+    let allCharacters = allKinds.reduce(0) { $0 + "Body for \($1)".count }
+    let olderCharacters = ["memories.instructions", "plugins.usage_instructions"].reduce(0) { $0 + "Body for \($1)".count }
+    let skillCharacters = "Body for host_skills.instructions".count
+    #expect(summary.current7.characters == allCharacters)
+    #expect(summary.current7.sessionCount == 1)
+    #expect(summary.current7.incompleteCount == 1)
+    #expect(summary.current30.characters == allCharacters + olderCharacters)
+    #expect(summary.all7.characters == allCharacters + skillCharacters)
+    #expect(summary.all7.projectCount == 2)
+    #expect(summary.all30.characters == allCharacters + skillCharacters + olderCharacters)
+    #expect(summary.all30.sessionCount == 3)
+    #expect(summary.all30.allThreeCount == 1)
+    #expect(summary.all30.byTarget[.plugins] == ["plugins.usage_instructions", "plugins.recommendations", "plugins.usage_instructions"]
+        .reduce(0) { $0 + "Body for \($1)".count })
+}
+
+@Test func scannerIncludesAllRecentProjectsBeyondInspectorLimit() async throws {
+    let workspace = try Workspace()
+    let root = workspace.home.appendingPathComponent("sessions/2026/09/25")
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    for index in 0..<501 {
+        let project = index.isMultiple(of: 2) ? workspace.project.path : "/another"
+        let file = root.appendingPathComponent("\(index).jsonl")
+        try fixture(project: project, id: "session-\(index)", date: now.addingTimeInterval(-86_400),
+            inherited: index == 1).write(to: file)
+        try FileManager.default.setAttributes([.modificationDate: now.addingTimeInterval(-3_600)], ofItemAtPath: file.path)
+    }
+    let duplicate = root.appendingPathComponent("duplicate.jsonl")
+    try fixture(project: workspace.project.path, id: "session-0", date: now.addingTimeInterval(-86_400))
+        .write(to: duplicate)
+    try FileManager.default.setAttributes([.modificationDate: now.addingTimeInterval(-3_600)], ofItemAtPath: duplicate.path)
+    let scan = try await SessionRepository().scan(codexHome: workspace.home, project: workspace.project, now: now)
+    #expect(scan.sessions.count == 30)
+    #expect(scan.recentSessions.count == 501)
+    #expect(scan.warning == nil)
+    let summary = SavingsSummary(sessions: scan.recentSessions, project: workspace.project, now: now)
+    #expect(summary.all30.sessionCount == 500)
+    #expect(summary.all30.incompleteCount == 1)
+    #expect(summary.all30.projectCount == 2)
+}
+
 @Test func readerHandlesChunkBoundariesAndStopsAtInitialEvidence() throws {
     let workspace = try Workspace()
     let file = workspace.root.appendingPathComponent("large.jsonl")

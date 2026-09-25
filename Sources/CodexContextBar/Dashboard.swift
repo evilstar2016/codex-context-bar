@@ -12,14 +12,18 @@ struct Dashboard: View {
         VStack(spacing: 0) {
             SessionSelectionBar(model: model)
             InspectorDivider()
-            GeometryReader { geometry in
-            HSplitView {
-                overview
-                    .frame(minWidth: 470, idealWidth: 628, maxWidth: .infinity, maxHeight: .infinity)
-                inspector(compact: geometry.size.height < 720)
-                    .frame(minWidth: 340, idealWidth: 420, maxWidth: 420, maxHeight: .infinity)
+            if model.showingSavings {
+                SavingsDashboard(model: model)
+            } else {
+                GeometryReader { geometry in
+                    HSplitView {
+                        overview
+                            .frame(minWidth: 470, idealWidth: 628, maxWidth: .infinity, maxHeight: .infinity)
+                        inspector(compact: geometry.size.height < 720)
+                            .frame(minWidth: 340, idealWidth: 420, maxWidth: 420, maxHeight: .infinity)
+                    }
+                }
             }
-        }
         }
         .background { GlassBackground() }
         .foregroundStyle(InspectorTheme.text)

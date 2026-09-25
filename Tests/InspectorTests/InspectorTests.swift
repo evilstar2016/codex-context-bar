@@ -25,8 +25,10 @@ private struct InspectorFixture {
         let header = try makeHeader(project: project, file: root.appendingPathComponent("synthetic.jsonl"))
         model.sessions = [header]
         model.selectedID = header.id
+        model.showingSavings = false
         model.recentProjects = [project.path]
         model.lastRefresh = ISO8601DateFormatter().date(from: "2026-09-22T11:56:00Z")
+        model.savings = SavingsSummary(sessions: [header], project: project, now: try #require(model.lastRefresh))
         if pending {
             let preview = try model.store.preview(project: project, baseline: header, target: .skillCatalog, enabled: false)
             let operation = try model.store.apply(preview, project: project)
@@ -153,6 +155,9 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     let fixture = try InspectorFixture()
     defer { fixture.cleanup() }
     fixture.model.isDesignPreview = true
+    fixture.model.showingSavings = true
+    try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("dashboard.png"))
+    fixture.model.showingSavings = false
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("inspector.png"))
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("inspector-light.png"), scheme: .light)
     try snapshot(MenuContent(model: fixture.model), size: CGSize(width: 316, height: 400), to: destination.appendingPathComponent("menu-light.png"), scheme: .light)

@@ -2,6 +2,7 @@ import Foundation
 
 public struct ScanResult: Sendable {
     public let sessions: [SessionHeader]
+    public let recentSessions: [SessionHeader]
     public let warning: String?
 }
 
@@ -11,10 +12,10 @@ public actor SessionRepository {
     private var cache: [String: Entry] = [:]
     public init() {}
 
-    public func scan(codexHome: URL, project: URL) throws -> ScanResult {
+    public func scan(codexHome: URL, project: URL, now: Date = Date()) throws -> ScanResult {
         let root = codexHome.appendingPathComponent("sessions", isDirectory: true)
         guard FileManager.default.fileExists(atPath: root.path) else {
-            return ScanResult(sessions: [], warning: "尚未找到 Codex sessions 目录")
+            return ScanResult(sessions: [], recentSessions: [], warning: "尚未找到 Codex sessions 目录")
         }
         var hadError = false
         guard let iterator = FileManager.default.enumerator(at: root,
@@ -33,7 +34,10 @@ public actor SessionRepository {
             files.append((url, values.fileSize ?? 0, values.contentModificationDate ?? .distantPast))
         }
         files.sort { $0.2 > $1.2 }
-        let selected = Array(files.prefix(500))
+        let cutoff = now.addingTimeInterval(-30 * 86_400)
+        let selected = files.enumerated().compactMap { index, file in
+            index < 500 || file.2 >= cutoff ? file : nil
+        }
         let paths = Set(selected.map { $0.0.path })
         cache = cache.filter { paths.contains($0.key) }
         for (url, size, modified) in selected {
@@ -45,14 +49,15 @@ public actor SessionRepository {
                 hadError = true
             }
         }
-        let projectPath = canonicalPath(project)
-        let ordered = cache.values.compactMap(\.header).filter { $0.project == projectPath }
-            .sorted { $0.date > $1.date }
+        let ordered = cache.values.compactMap(\.header).sorted { $0.date > $1.date }
         var ids = Set<String>()
         let unique = ordered.filter { ids.insert($0.id).inserted }
-        let limited = files.count > 500 || visited > 20_000
+        let projectPath = canonicalPath(project)
+        let recent = unique.filter { $0.date >= cutoff && $0.date <= now }
+        let limited = selected.count < files.count
         let warning = hadError ? "部分日志无法读取或扫描已达上限；结果可能不完整"
-            : limited ? "仅检查最近修改的 500 个日志文件；更早的项目记录可能未包含" : nil
-        return ScanResult(sessions: Array(unique.prefix(30)), warning: warning)
+            : limited ? "较早会话仅检查最近修改的 500 个日志；近 30 天统计按文件修改时间筛选" : nil
+        return ScanResult(sessions: Array(unique.filter { $0.project == projectPath }.prefix(30)),
+            recentSessions: recent, warning: warning)
     }
 }

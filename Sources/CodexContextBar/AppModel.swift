@@ -8,6 +8,8 @@ final class AppModel {
     var project: URL?
     var codexHome: URL
     var sessions: [SessionHeader] = []
+    var savings: SavingsSummary?
+    var showingSavings = true
     var selectedID: String?
     var selectedKind = InspectorItem.primary[0].id
     var recentProjects: [String] = []
@@ -107,7 +109,7 @@ final class AppModel {
     }
 
     private func clearProjectState() {
-        sessions = []; selectedID = nil; operations = []; verification = [:]; preview = nil
+        sessions = []; savings = nil; selectedID = nil; operations = []; verification = [:]; preview = nil
         selectedKind = InspectorItem.primary[0].id
         configuredValues = [:]; configProblems = [:]; warning = nil; lastRefresh = nil
     }
@@ -164,20 +166,22 @@ final class AppModel {
         error = nil
         defer { refreshing = false }
         do {
-            let scan = try await repository.scan(codexHome: home, project: project)
+            let now = Date()
+            let scan = try await repository.scan(codexHome: home, project: project, now: now)
             guard self.project == project, codexHome == home else {
                 Task { await self.refresh() }
                 return
             }
             loadConfiguration()
             sessions = scan.sessions
+            savings = SavingsSummary(sessions: scan.recentSessions, project: project, now: now)
             warning = scan.warning
             if !sessions.contains(where: { $0.id == selectedID }) { selectUsableSession() }
             operations = try store.operations(project: project)
             verification = try Dictionary(uniqueKeysWithValues: operations.map {
                 ($0.id, try store.verify($0, project: project, sessions: sessions))
             })
-            lastRefresh = Date()
+            lastRefresh = now
         } catch { self.error = error.localizedDescription }
     }
 

@@ -48,7 +48,8 @@ struct MenuContent: View {
                 Text("观察会话头与配置变化，数据仅在本机处理。")
                     .font(.system(size: 13)).foregroundStyle(InspectorTheme.secondary).lineSpacing(4).padding(.bottom, 24)
             }
-            Button("打开检查器") {
+            Button("打开收益仪表盘") {
+                model.showingSavings = true
                 openWindow(id: "dashboard")
                 NSApp.activate(ignoringOtherApps: true)
             }.buttonStyle(InspectorButtonStyle(prominent: true))

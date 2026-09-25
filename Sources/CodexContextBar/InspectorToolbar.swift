@@ -46,18 +46,27 @@ struct SessionSelectionBar: View {
         HStack(spacing: 16) {
             ProjectMenu(model: model).labelStyle(.titleAndIcon).frame(maxWidth: 240, alignment: .leading)
             Divider().frame(height: 20)
-            Menu {
-                if model.sessions.isEmpty { Text("暂无会话") }
-                ForEach(model.sessions) { session in
-                    Button { model.selectedID = session.id } label: {
-                        Text("\(session.id == model.selected?.id ? "✓ " : "")\(session.date.formatted(date: .abbreviated, time: .shortened)) · \(session.id.suffix(8)) · \(session.complete ? "完整" : "不完整")")
+            Picker("页面", selection: $model.showingSavings) {
+                Text("收益仪表盘").tag(true)
+                Text("会话检查器").tag(false)
+            }
+            .pickerStyle(.segmented).frame(width: 230)
+            if !model.showingSavings {
+                Divider().frame(height: 20)
+                Menu {
+                    if model.sessions.isEmpty { Text("暂无会话") }
+                    ForEach(model.sessions) { session in
+                        Button { model.selectedID = session.id } label: {
+                            Text("\(session.id == model.selected?.id ? "✓ " : "")\(session.date.formatted(date: .abbreviated, time: .shortened)) · \(session.id.suffix(8)) · \(session.complete ? "完整" : "不完整")")
+                        }
                     }
-                }
-            } label: {
-                Label(model.selected.map { "\($0.date.formatted(date: .abbreviated, time: .shortened)) · \($0.complete ? "完整" : "不完整")" } ?? "选择会话", systemImage: "calendar")
-            }.disabled(model.sessions.isEmpty).labelStyle(.titleAndIcon)
+                } label: {
+                    Label(model.selected.map { "\($0.date.formatted(date: .abbreviated, time: .shortened)) · \($0.complete ? "完整" : "不完整")" } ?? "选择会话", systemImage: "calendar")
+                }.disabled(model.sessions.isEmpty).labelStyle(.titleAndIcon)
+            }
             Spacer(minLength: 0)
-            Text("\(model.sessions.count) 个会话").font(.caption).foregroundStyle(InspectorTheme.secondary)
+            Text(model.showingSavings ? model.savings.map { "\($0.all30.sessionCount) 个完整会话" } ?? "等待扫描" : "\(model.sessions.count) 个会话")
+                .font(.caption).foregroundStyle(InspectorTheme.secondary)
         }
         .menuStyle(.borderlessButton)
         .tint(InspectorTheme.text)
