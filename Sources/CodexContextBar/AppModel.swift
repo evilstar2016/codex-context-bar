@@ -5,6 +5,9 @@ import Observation
 
 @MainActor @Observable
 final class AppModel {
+    var language = AppLanguage.chinese {
+        didSet { defaults.set(language.rawValue, forKey: "language") }
+    }
     var project: URL?
     var codexHome: URL
     var sessions: [SessionHeader] = []
@@ -42,11 +45,11 @@ final class AppModel {
         latestOperations.filter { verification[$0.id]?.state == .mismatch || verification[$0.id]?.state == .configChanged }.count
     }
     var menuHeadline: String {
-        if project == nil { return "选择一个项目" }
-        if attentionCount > 0 { return "\(attentionCount) 项需要检查" }
-        if pendingCount > 0 { return "\(pendingCount) 项待验证" }
-        if selected == nil { return "等待会话记录" }
-        return selected?.complete == true ? "最近会话已读取" : "会话证据不足"
+        if project == nil { return language.text("选择一个项目") }
+        if attentionCount > 0 { return String(format: language.text("%d 项需要检查"), attentionCount) }
+        if pendingCount > 0 { return String(format: language.text("%d 项待验证"), pendingCount) }
+        if selected == nil { return language.text("等待会话记录") }
+        return language.text(selected?.complete == true ? "最近会话已读取" : "会话证据不足")
     }
     func operation(for target: ControlTarget?) -> ConfigOperation? {
         guard let target else { return nil }
@@ -56,10 +59,10 @@ final class AppModel {
         operation(for: target).flatMap { verification[$0.id] }
     }
     func configurationLabel(for target: ControlTarget?) -> String {
-        guard let target else { return "仅观察" }
-        if configProblems[target] != nil { return "无法读取" }
-        guard let value = configuredValues[target] else { return "未设置" }
-        return value ? "已保存开启" : "已保存关闭"
+        guard let target else { return language.text("仅观察") }
+        if configProblems[target] != nil { return language.text("无法读取") }
+        guard let value = configuredValues[target] else { return language.text("未设置") }
+        return language.text(value ? "已保存开启" : "已保存关闭")
     }
     var store: OperationStore {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -68,6 +71,7 @@ final class AppModel {
 
     init(defaults: UserDefaults = .standard, startsMonitoring: Bool = true, operationDirectory: URL? = nil) {
         self.defaults = defaults
+        language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .chinese
         self.operationDirectory = operationDirectory
         recentProjects = defaults.stringArray(forKey: "recentProjects") ?? []
         let savedHome = defaults.string(forKey: "codexHome")
@@ -86,7 +90,7 @@ final class AppModel {
 
     func chooseProject() {
         let panel = NSOpenPanel()
-        panel.title = "选择 Codex 项目目录"
+        panel.title = language.text("选择 Codex 项目目录")
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
@@ -129,7 +133,7 @@ final class AppModel {
 
     func chooseCodexHome() {
         let panel = NSOpenPanel()
-        panel.title = "选择 Codex 数据目录（包含 sessions 和 config.toml）"
+        panel.title = language.text("选择 Codex 数据目录（包含 sessions 和 config.toml）")
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.showsHiddenFiles = true
@@ -189,6 +193,14 @@ final class AppModel {
         guard !isDesignPreview, let project, let selected else { return }
         do { preview = try store.preview(project: project, baseline: selected, target: target, enabled: enabled) }
         catch { self.error = error.localizedDescription }
+    }
+
+    func guideToDisable(_ target: ControlTarget) {
+        selectedKind = InspectorItem.primary.first { $0.target == target }?.id ?? selectedKind
+        showingSavings = false
+        guard configuredValues[target] != false, configProblems[target] == nil else { return }
+        selectUsableSession()
+        if selected?.complete == true { prepare(target, enabled: false) }
     }
 
     func applyPreview() {

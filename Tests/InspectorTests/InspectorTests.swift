@@ -60,7 +60,7 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
         ["type": "response_item", "payload": ["role": "user", "content": [["text": ""]],
             "internal_chat_message_metadata_passthrough": ["content_item_kinds": ["environments.environment_context"]]]],
         ["type": "world_state", "payload": ["full": true]],
-        ["type": "turn_context", "payload": ["cwd": project.path]],
+        ["type": "turn_context", "payload": ["cwd": project.path, "model": "gpt-5.6-sol"]],
     ]
     let data = try records.enumerated().reduce(into: Data()) { data, record in
         var object = record.element
@@ -88,7 +88,7 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     fixture.model.selectedKind = "plugins.recommendations"
     #expect(fixture.model.selectedItem.title == "推荐插件")
     #expect(fixture.model.selectedItem.target == nil)
-    #expect(fixture.model.selectedItem.characters(in: fixture.model.selected) == 2907)
+    #expect(fixture.model.selectedItem.tokens(in: fixture.model.selected) == TokenEstimate.count(String(repeating: "示", count: 2907)))
     fixture.model.selectedKind = "plugins.usage_instructions"
     #expect(fixture.model.selectedItem.target == .plugins)
     #expect(fixture.model.selectedItem.scope.contains("所有项目"))
@@ -99,10 +99,10 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     defer { fixture.cleanup() }
     var header = try makeHeader(project: try #require(fixture.model.project), file: fixture.root.appendingPathComponent("empty.jsonl"), kinds: [])
     #expect(InspectorItem.items(in: header).count >= 4)
-    #expect(InspectorItem.primary[0].characters(in: header) == 0)
+    #expect(InspectorItem.primary[0].tokens(in: header) == 0)
     #expect(InspectorItem.primary[0].observation(in: header) == "未观察到")
     header.complete = false
-    #expect(InspectorItem.primary[0].characters(in: header) == nil)
+    #expect(InspectorItem.primary[0].tokens(in: header) == nil)
     #expect(InspectorItem.primary[0].observation(in: header) == "未知")
 }
 
@@ -115,6 +115,25 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     #expect(!FileManager.default.fileExists(atPath: preview.file.path))
     fixture.model.preview = nil
     #expect(!FileManager.default.fileExists(atPath: preview.file.path))
+}
+
+@Test @MainActor func guidedDisableOpensPreviewAndLanguagePersists() throws {
+    let fixture = try InspectorFixture(pending: false)
+    defer { fixture.cleanup() }
+    let model = fixture.model
+    model.language = .english
+    #expect(model.language.text("自动技能目录") == "Automatic skill catalog")
+    #expect(fixture.defaults.string(forKey: "language") == "en")
+    model.showingSavings = true
+    model.guideToDisable(.memory)
+    #expect(!model.showingSavings)
+    #expect(model.selectedKind == "memories.instructions")
+    #expect(model.preview?.target == .memory)
+    let project = try #require(model.project)
+    let file = model.store.configURL(project: project, target: .memory)
+    #expect(!FileManager.default.fileExists(atPath: file.path))
+    let reloaded = AppModel(defaults: fixture.defaults, startsMonitoring: false, operationDirectory: fixture.root.appendingPathComponent("other-operations"))
+    #expect(reloaded.language == .english)
 }
 
 @Test @MainActor func onlyLatestOperationPerTargetCountsAsPending() throws {
@@ -157,6 +176,10 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     fixture.model.isDesignPreview = true
     fixture.model.showingSavings = true
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("dashboard.png"))
+    fixture.model.language = .english
+    try snapshot(Dashboard(model: fixture.model).environment(\.locale, fixture.model.language.locale),
+        size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("dashboard-en.png"))
+    fixture.model.language = .chinese
     fixture.model.showingSavings = false
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("inspector.png"))
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("inspector-light.png"), scheme: .light)
@@ -226,9 +249,9 @@ private func snapshot<V: View>(_ view: V, size: CGSize, to url: URL, scheme: Col
     var partial = try #require(fixture.model.selected)
     partial.complete = false
     partial.blocks = partial.blocks.filter { $0.kind == "host_skills.instructions" }
-    #expect(InspectorItem.primary[0].characters(in: partial) == 6840)
+    #expect(InspectorItem.primary[0].tokens(in: partial) == TokenEstimate.count(String(repeating: "示", count: 6840)))
     #expect(InspectorItem.primary[0].observation(in: partial) == "部分观测")
-    #expect(InspectorItem.primary[1].characters(in: partial) == nil)
+    #expect(InspectorItem.primary[1].tokens(in: partial) == nil)
     #expect(InspectorItem.primary[1].observation(in: partial) == "未知")
 }
 

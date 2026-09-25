@@ -33,32 +33,32 @@ struct Dashboard: View {
         .toolbar { InspectorToolbar(model: model) }
         .sheet(item: $model.preview) { preview in ConfigPreviewSheet(model: model, preview: preview) }
         .sheet(isPresented: $model.showingHistory) { OperationHistorySheet(model: model) }
-        .alert("无法完成操作", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
-            Button("知道了", role: .cancel) { model.error = nil }
-        } message: { Text(model.error ?? "") }
-        .alert("撤销这次配置修改？", isPresented: Binding(get: { undoCandidate != nil }, set: { if !$0 { undoCandidate = nil } })) {
-            Button("取消", role: .cancel) { undoCandidate = nil }
-            Button("撤销") { if let operation = undoCandidate { model.undo(operation) }; undoCandidate = nil }
-        } message: { Text("只恢复本次目标键，保留其他修改。恢复效果仍需新会话观察。") }
+        .alert(model.language.text("无法完成操作"), isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+            Button(model.language.text("知道了"), role: .cancel) { model.error = nil }
+        } message: { Text(model.language.text(model.error ?? "")) }
+        .alert(model.language.text("撤销这次配置修改？"), isPresented: Binding(get: { undoCandidate != nil }, set: { if !$0 { undoCandidate = nil } })) {
+            Button(model.language.text("取消"), role: .cancel) { undoCandidate = nil }
+            Button(model.language.text("撤销")) { if let operation = undoCandidate { model.undo(operation) }; undoCandidate = nil }
+        } message: { Text(model.language.text("只恢复本次目标键，保留其他修改。恢复效果仍需新会话观察。")) }
     }
 
     private var overview: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Text(model.isDesignPreview ? "示例会话" : "历史会话")
+                Text(model.language.text(model.isDesignPreview ? "示例会话" : "历史会话"))
                     .font(.system(size: 12)).foregroundStyle(InspectorTheme.secondary)
-                Text(model.selected?.id == model.sessions.first?.id ? "最近会话的初始上下文" : "所选会话的初始上下文")
+                Text(model.language.text(model.selected?.id == model.sessions.first?.id ? "最近会话的初始上下文" : "所选会话的初始上下文"))
                     .font(.system(size: 30, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(sessionSubtitle).font(.system(size: 15)).foregroundStyle(InspectorTheme.secondary)
             }.padding(.bottom, 20)
             if let session = model.selected, !session.complete {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label("当前记录不是完整会话头", systemImage: "info.circle").font(.headline)
-                    Text(session.issue ?? "无法判断未出现的内容是否被关闭。")
+                    Label(model.language.text("当前记录不是完整会话头"), systemImage: "info.circle").font(.headline)
+                    Text(model.language.text(session.issue ?? "无法判断未出现的内容是否被关闭。"))
                         .font(.caption).fixedSize(horizontal: false, vertical: true)
                     if let usable = model.preferredSession, usable.complete {
-                        Button("查看最近完整会话 · \(usable.date.formatted(date: .abbreviated, time: .shortened))") { model.selectUsableSession() }
+                        Button(String(format: model.language.text("查看最近完整会话 · %@"), usable.date.formatted(date: .abbreviated, time: .shortened))) { model.selectUsableSession() }
                     }
                 }.foregroundStyle(InspectorTheme.amber).padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -79,9 +79,9 @@ struct Dashboard: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         HStack {
-                            Text("内容").frame(maxWidth: .infinity, alignment: .leading)
-                            Text("观测").frame(width: 84, alignment: .leading)
-                            Text("字符").frame(width: 80, alignment: .trailing)
+                            Text(model.language.text("内容")).frame(maxWidth: .infinity, alignment: .leading)
+                            Text(model.language.text("观测")).frame(width: 84, alignment: .leading)
+                            Text("Token").frame(width: 80, alignment: .trailing)
                         }
                         .font(.system(size: 13)).foregroundStyle(InspectorTheme.secondary)
                         .padding(.horizontal, 20).frame(height: 38)
@@ -94,15 +94,15 @@ struct Dashboard: View {
                                 HStack(spacing: 14) {
                                     Image(systemName: expandedOthers ? "chevron.down" : "chevron.right")
                                         .font(.system(size: 13)).frame(width: 20)
-                                    Text("其他会话说明").frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("\(otherItems.count) 项").frame(width: 84, alignment: .leading)
-                                    Text(otherItems.compactMap { $0.characters(in: model.selected) }.reduce(0, +).formatted()).monospacedDigit().frame(width: 80, alignment: .trailing)
+                                    Text(model.language.text("其他会话说明")).frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(String(format: model.language.text("%d 项"), otherItems.count)).frame(width: 84, alignment: .leading)
+                                    Text(otherItems.compactMap { $0.tokens(in: model.selected) }.reduce(0, +).formatted()).monospacedDigit().frame(width: 80, alignment: .trailing)
                                 }
                                 .font(.system(size: 15)).foregroundStyle(InspectorTheme.secondary)
                                 .padding(.horizontal, 20).frame(minHeight: 62).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel(expandedOthers ? "收起其他会话说明" : "展开其他会话说明")
+                            .accessibilityLabel(model.language.text(expandedOthers ? "收起其他会话说明" : "展开其他会话说明"))
                             if expandedOthers { ForEach(otherItems) { item in itemRow(item) } }
                         }
                     }
@@ -115,19 +115,19 @@ struct Dashboard: View {
                 .scrollIndicators(.visible)
             }
             if let warning = model.warning {
-                inlineNotice(warning)
+                inlineNotice(model.language.text(warning))
                 if model.sessions.isEmpty {
-                    Button("恢复默认数据目录", action: model.restoreDefaultCodexHome).padding(.top, 8)
+                    Button(model.language.text("恢复默认数据目录"), action: model.restoreDefaultCodexHome).padding(.top, 8)
                 }
             }
-            Text("读取来源：\(model.codexHome.path)")
+            Text(String(format: model.language.text("读取来源：%@"), model.codexHome.path))
                 .font(.caption).foregroundStyle(InspectorTheme.secondary)
                 .textSelection(.enabled).lineLimit(2).truncationMode(.middle).padding(.top, 12)
             Spacer(minLength: 16)
             HStack {
                 Text(totalLabel)
                 Spacer()
-                if model.refreshing { ProgressView().controlSize(.small).accessibilityLabel("正在检查会话") }
+                if model.refreshing { ProgressView().controlSize(.small).accessibilityLabel(model.language.text("正在检查会话")) }
             }
             .font(.system(size: 13)).foregroundStyle(InspectorTheme.secondary)
         }
@@ -142,10 +142,10 @@ struct Dashboard: View {
             } label: {
                 HStack(spacing: 14) {
                     Image(systemName: item.symbol).font(.system(size: 20, weight: .light)).frame(width: 20)
-                    Text(item.title).fontWeight(model.selectedKind == item.id ? .medium : .regular)
+                    Text(model.language.text(item.title)).fontWeight(model.selectedKind == item.id ? .medium : .regular)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(item.observation(in: model.selected)).frame(width: 84, alignment: .leading)
-                    Text(item.characters(in: model.selected)?.formatted() ?? "—")
+                    Text(model.language.text(item.observation(in: model.selected))).frame(width: 84, alignment: .leading)
+                    Text(item.tokens(in: model.selected)?.formatted() ?? "—")
                         .monospacedDigit().frame(width: 80, alignment: .trailing)
                 }
                 .font(.system(size: 15))
@@ -167,9 +167,9 @@ struct Dashboard: View {
                         Image(systemName: model.selectedItem.symbol)
                             .font(.system(size: 44, weight: .light)).foregroundStyle(InspectorTheme.secondary)
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(model.selectedItem.title).font(.system(size: 25, weight: .semibold))
+                            Text(model.language.text(model.selectedItem.title)).font(.system(size: 25, weight: .semibold))
                                 .fixedSize(horizontal: false, vertical: true)
-                            Text(model.selectedItem.scope).font(.system(size: 14)).foregroundStyle(InspectorTheme.secondary)
+                            Text(model.language.text(model.selectedItem.scope)).font(.system(size: 14)).foregroundStyle(InspectorTheme.secondary)
                         }
                     }
                     .padding(.leading, 10)
@@ -177,10 +177,10 @@ struct Dashboard: View {
                     InspectorDivider()
                     VStack(alignment: .leading, spacing: compact ? 18 : 22) {
                         detailRow("配置状态", value: model.configurationLabel(for: model.selectedItem.target))
-                        detailRow("所选观测", value: model.selectedItem.observation(in: model.selected))
+                        detailRow("所选观测", value: model.language.text(model.selectedItem.observation(in: model.selected)))
                         HStack(alignment: .top, spacing: 18) {
-                            Text("当前状态").foregroundStyle(InspectorTheme.secondary).frame(width: 78, alignment: .leading)
-                            StatusLabel(text: statusText, color: statusColor).fixedSize(horizontal: false, vertical: true)
+                            Text(model.language.text("当前状态")).foregroundStyle(InspectorTheme.secondary).frame(width: 78, alignment: .leading)
+                            StatusLabel(text: model.language.text(statusText), color: statusColor).fixedSize(horizontal: false, vertical: true)
                         }.font(.system(size: 15))
                     }.padding(.vertical, compact ? 22 : 34)
                     actions.padding(.top, compact ? 14 : 50).padding(.bottom, compact ? 24 : 48)
@@ -189,7 +189,7 @@ struct Dashboard: View {
                 }
             }.scrollIndicators(.automatic)
             InspectorDivider()
-            Text(model.selectedItem.consequence)
+            Text(model.language.text(model.selectedItem.consequence))
                 .font(.system(size: 12)).lineSpacing(3).foregroundStyle(InspectorTheme.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 18).padding(.bottom, compact ? 20 : 36)
@@ -199,34 +199,34 @@ struct Dashboard: View {
     @ViewBuilder private var actions: some View {
         if let target = model.selectedItem.target {
             VStack(alignment: .leading, spacing: 12) {
-                Text(actionHelp).font(.system(size: 14)).lineSpacing(4).foregroundStyle(InspectorTheme.secondary)
+                Text(model.language.text(actionHelp)).font(.system(size: 14)).lineSpacing(4).foregroundStyle(InspectorTheme.secondary)
                     .fixedSize(horizontal: false, vertical: true).padding(.bottom, 8)
                 if let result = model.result(for: target), result.state == .waiting || result.state == .mismatch || result.state == .configChanged {
-                    Button(model.refreshing ? "正在检查…" : "检查新任务") { Task { await model.refresh() } }
+                    Button(model.language.text(model.refreshing ? "正在检查…" : "检查新任务")) { Task { await model.refresh() } }
                         .buttonStyle(InspectorButtonStyle(prominent: true)).disabled(model.refreshing)
                 } else {
-                    Button(model.configuredValues[target] == false ? "预览开启" : "预览关闭") {
+                    Button(model.language.text(model.configuredValues[target] == false ? "预览开启" : "预览关闭")) {
                         model.prepare(target, enabled: model.configuredValues[target] == false)
                     }
                     .buttonStyle(InspectorButtonStyle(prominent: true))
                     .disabled(model.selected?.complete != true || model.configProblems[target] != nil)
                 }
                 if let operation = model.operation(for: target), !operation.restored {
-                    Button("撤销此次修改") { undoCandidate = operation }
+                    Button(model.language.text("撤销此次修改")) { undoCandidate = operation }
                         .buttonStyle(InspectorButtonStyle())
                 }
                 if let result = model.result(for: target), result.state == .configChanged {
-                    Button("重新预览配置") { model.prepare(target, enabled: model.configuredValues[target] == false) }
+                    Button(model.language.text("重新预览配置")) { model.prepare(target, enabled: model.configuredValues[target] == false) }
                         .buttonStyle(.link).font(.system(size: 13))
                         .disabled(model.selected?.complete != true)
                 }
             }
         } else {
             VStack(alignment: .leading, spacing: 14) {
-                Text(model.selectedItem.id == "plugins.recommendations" ? "此项暂不提供独立关闭。可在插件说明中管理整个 Plugins 功能。" : "此项仅供观察，可展开下方的配置与证据查看来源。")
+                Text(model.language.text(model.selectedItem.id == "plugins.recommendations" ? "此项暂不提供独立关闭。可在插件说明中管理整个 Plugins 功能。" : "此项仅供观察，可展开下方的配置与证据查看来源。"))
                     .font(.system(size: 14)).lineSpacing(4).foregroundStyle(InspectorTheme.secondary)
                 if model.selectedItem.id == "plugins.recommendations" {
-                    Button("查看 Plugins 功能") { model.selectedKind = "plugins.usage_instructions" }
+                    Button(model.language.text("查看 Plugins 功能")) { model.selectedKind = "plugins.usage_instructions" }
                         .buttonStyle(InspectorButtonStyle())
                 }
             }
@@ -236,35 +236,35 @@ struct Dashboard: View {
     private var evidence: some View {
         VStack(alignment: .leading, spacing: 12) {
             Button { showingEvidence.toggle() } label: {
-                Label("查看配置与证据", systemImage: showingEvidence ? "chevron.down" : "chevron.right")
+                Label(model.language.text("查看配置与证据"), systemImage: showingEvidence ? "chevron.down" : "chevron.right")
                     .font(.system(size: 14)).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(.plain)
             if showingEvidence {
                 VStack(alignment: .leading, spacing: 12) {
                     if let session = model.selected {
                         evidenceLine("所选会话", session.id)
-                        evidenceLine("Runtime", session.version)
-                        evidenceLine("Source", session.source)
+                        evidenceLine("Runtime", model.language.text(session.version))
+                        evidenceLine("Source", model.language.text(session.source))
                         evidenceLine("Metadata", model.selectedItem.id)
-                        Button("在 Finder 查看会话记录") { NSWorkspace.shared.activateFileViewerSelecting([session.file]) }
+                        Button(model.language.text("在 Finder 查看会话记录")) { NSWorkspace.shared.activateFileViewerSelecting([session.file]) }
                             .buttonStyle(.link)
                     }
                     if let target = model.selectedItem.target, let project = model.project {
                         evidenceLine("写入位置", model.store.configURL(project: project, target: target).path)
                         evidenceLine("配置键", "\(target.table).\(target.key)")
-                        if let problem = model.configProblems[target] { Text(problem).foregroundStyle(InspectorTheme.amber) }
+                        if let problem = model.configProblems[target] { Text(model.language.text(problem)).foregroundStyle(InspectorTheme.amber) }
                     }
                     if let result = model.result(for: model.selectedItem.target) {
-                        Text(result.message)
+                        Text(model.language.text(result.message))
                         if let id = result.sessionID { evidenceLine("验证会话", id) }
                     }
-                    Text("配置状态仅表示目标文件中的键值；其它配置层与宿主可能覆盖。观测不代表每次完整请求，也不证明唯一因果。")
-                    Text("验证基线：runtime 0.154.0-alpha.6.2。其它版本需重新观察。字符数不是精确 Token 或账单节省。")
+                    Text(model.language.text("配置状态仅表示目标文件中的键值；其它配置层与宿主可能覆盖。观测不代表每次完整请求，也不证明唯一因果。"))
+                    Text(model.language.text("验证基线：runtime 0.154.0-alpha.6.2。其它版本需重新观察。Token 为估算值，不是账单节省。"))
                 }
                 .font(.system(size: 12)).foregroundStyle(InspectorTheme.secondary)
                 .textSelection(.enabled)
             } else {
-                Text("显示相关路径、运行时信息、来源和元数据标识符。")
+                Text(model.language.text("显示相关路径、运行时信息、来源和元数据标识符。"))
                     .font(.system(size: 12)).lineSpacing(3).foregroundStyle(InspectorTheme.secondary)
             }
         }
@@ -272,7 +272,7 @@ struct Dashboard: View {
 
     private func evidenceLine(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(title)
+            Text(model.language.text(title))
             Text(value).font(.system(size: 11, design: .monospaced)).foregroundStyle(InspectorTheme.text)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -280,7 +280,7 @@ struct Dashboard: View {
 
     private func detailRow(_ title: String, value: String) -> some View {
         HStack(alignment: .top, spacing: 18) {
-            Text(title).foregroundStyle(InspectorTheme.secondary).frame(width: 78, alignment: .leading)
+            Text(model.language.text(title)).foregroundStyle(InspectorTheme.secondary).frame(width: 78, alignment: .leading)
             Text(value).fixedSize(horizontal: false, vertical: true)
         }.font(.system(size: 15))
     }
@@ -317,13 +317,13 @@ struct Dashboard: View {
         }
     }
     private var sessionSubtitle: String {
-        guard let session = model.selected else { return model.refreshing ? "正在读取所选项目的会话…" : "本地读取 · 配置与实际观测分开展示" }
-        return "\(session.complete ? "完整会话头" : "不完整会话头") · \(session.date.formatted(.dateTime.month(.twoDigits).day(.twoDigits).hour().minute()))"
+        guard let session = model.selected else { return model.language.text(model.refreshing ? "正在读取所选项目的会话…" : "本地读取 · 配置与实际观测分开展示") }
+        return "\(model.language.text(session.complete ? "完整会话头" : "不完整会话头")) · \(session.date.formatted(.dateTime.month(.twoDigits).day(.twoDigits).hour().minute()))"
     }
     private var totalLabel: String {
-        guard let session = model.selected else { return "数据仅在本机处理" }
-        if !session.complete && session.blocks.isEmpty { return "无可用会话头数据 · 不代表 0 字符" }
-        return "\(session.complete ? "已观测" : "部分观测") \(session.characters.formatted()) 字符"
+        guard let session = model.selected else { return model.language.text("数据仅在本机处理") }
+        if !session.complete && session.blocks.isEmpty { return model.language.text("无可用会话头数据 · 不代表 0 Token") }
+        return String(format: model.language.text("%@ 约 %@ Token"), model.language.text(session.complete ? "已观测" : "部分观测"), session.tokens.formatted())
     }
     private var otherItems: [InspectorItem] { Array(InspectorItem.items(in: model.selected).dropFirst(4)) }
 
@@ -335,9 +335,9 @@ struct Dashboard: View {
     private func emptyState(title: String, description: String, symbol: String, action: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             Image(systemName: symbol).font(.system(size: 34, weight: .light)).foregroundStyle(InspectorTheme.secondary)
-            Text(title).font(.system(size: 21, weight: .medium))
-            Text(description).font(.system(size: 14)).foregroundStyle(InspectorTheme.secondary).lineSpacing(4)
-            Button(model.project == nil ? "选择项目" : "检查会话", action: action)
+            Text(model.language.text(title)).font(.system(size: 21, weight: .medium))
+            Text(model.language.text(description)).font(.system(size: 14)).foregroundStyle(InspectorTheme.secondary).lineSpacing(4)
+            Button(model.language.text(model.project == nil ? "选择项目" : "检查会话"), action: action)
                 .buttonStyle(InspectorButtonStyle(prominent: true)).frame(maxWidth: 240).disabled(model.refreshing)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 42)
     }

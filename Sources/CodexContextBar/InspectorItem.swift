@@ -23,9 +23,9 @@ struct InspectorItem: Identifiable, Equatable {
             }
     }
 
-    func characters(in session: SessionHeader?) -> Int? {
+    func tokens(in session: SessionHeader?) -> Int? {
         guard let session, session.complete || session.blocks.contains(where: { $0.kind == id }) else { return nil }
-        return session.blocks.filter { $0.kind == id }.reduce(0) { $0 + $1.characters }
+        return session.blocks.filter { $0.kind == id }.reduce(0) { $0 + $1.tokens }
     }
 
     func observation(in session: SessionHeader?) -> String {

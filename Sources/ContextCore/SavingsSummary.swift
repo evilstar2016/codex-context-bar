@@ -1,13 +1,18 @@
 import Foundation
 
 public struct SavingsSnapshot: Sendable {
-    public let characters: Int
-    public let initialCharacters: Int
+    public let tokens: Int
+    public let initialTokens: Int
+    public let ordinaryUSD: Double?
+    public let cachedUSD: Double?
     public let sessionCount: Int
+    public let pricedSessionCount: Int
+    public let unpricedSessionCount: Int
     public let projectCount: Int
     public let allThreeCount: Int
     public let incompleteCount: Int
     public let byTarget: [ControlTarget: Int]
+    public let byTargetUSD: [ControlTarget: Double]
 }
 
 public struct SavingsSummary: Sendable {
@@ -29,21 +34,41 @@ public struct SavingsSummary: Sendable {
         let matching = sessions.filter { $0.date >= cutoff && $0.date <= now && (project == nil || $0.project == project) }
         let complete = matching.filter(\.complete)
         var byTarget = Dictionary(uniqueKeysWithValues: ControlTarget.allCases.map { ($0, 0) })
+        var byTargetUSD = Dictionary(uniqueKeysWithValues: ControlTarget.allCases.map { ($0, 0.0) })
+        var ordinaryUSD = 0.0
+        var cachedUSD = 0.0
+        var pricedCount = 0
         for session in complete {
-            for target in ControlTarget.allCases {
-                byTarget[target, default: 0] += session.blocks
-                    .filter { target.kinds.contains($0.kind) }
-                    .reduce(0) { $0 + $1.characters }
+            let controlledTokens = ControlTarget.allCases.reduce(0) { sum, target in
+                let tokens = session.blocks.filter { target.kinds.contains($0.kind) }.reduce(0) { $0 + $1.tokens }
+                byTarget[target, default: 0] += tokens
+                return sum + tokens
+            }
+            if controlledTokens == 0 {
+                pricedCount += 1
+            } else if let price = InputPrice.forModel(session.model), session.tokens <= price.maximumInputTokens {
+                pricedCount += 1
+                ordinaryUSD += price.ordinaryCost(tokens: controlledTokens)
+                cachedUSD += price.cachedCost(tokens: controlledTokens)
+                for target in ControlTarget.allCases {
+                    let tokens = session.blocks.filter { target.kinds.contains($0.kind) }.reduce(0) { $0 + $1.tokens }
+                    byTargetUSD[target, default: 0] += price.ordinaryCost(tokens: tokens)
+                }
             }
         }
         return SavingsSnapshot(
-            characters: byTarget.values.reduce(0, +),
-            initialCharacters: complete.reduce(0) { $0 + $1.characters },
+            tokens: byTarget.values.reduce(0, +),
+            initialTokens: complete.reduce(0) { $0 + $1.tokens },
+            ordinaryUSD: pricedCount > 0 ? ordinaryUSD : nil,
+            cachedUSD: pricedCount > 0 ? cachedUSD : nil,
             sessionCount: complete.count,
+            pricedSessionCount: pricedCount,
+            unpricedSessionCount: complete.count - pricedCount,
             projectCount: Set(complete.map(\.project)).count,
             allThreeCount: complete.filter { session in ControlTarget.allCases.allSatisfy(session.contains) }.count,
             incompleteCount: matching.count - complete.count,
-            byTarget: byTarget
+            byTarget: byTarget,
+            byTargetUSD: byTargetUSD
         )
     }
 }

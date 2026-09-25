@@ -32,7 +32,7 @@ public enum HeaderParser {
         var expected = 0
         var roles = Set<String>()
         var fullState = false
-        var counts: [String: (kind: String, role: String, characters: Int)] = [:]
+        var counts: [String: (kind: String, role: String, tokens: Int)] = [:]
         for line in data.split(separator: 10) {
             finished = true
             guard !line.allSatisfy({ $0 == 13 || $0 == 32 || $0 == 9 }) else { continue }
@@ -47,7 +47,7 @@ public enum HeaderParser {
                       let cwd = payload["cwd"] as? String else { return nil }
                 let time = (payload["timestamp"] ?? item["timestamp"]) as? String ?? ""
                 header = SessionHeader(id: id, project: canonicalPath(URL(fileURLWithPath: cwd)),
-                    date: date(time) ?? .distantPast, version: payload["cli_version"] as? String ?? "未知",
+                    date: date(time) ?? .distantPast, version: payload["cli_version"] as? String ?? "未知", model: nil,
                     source: payload["source"] as? String ?? "未知", file: file, blocks: [], complete: false,
                     issue: "未找到完整初始会话头")
                 let base = payload["history_base"] as? [String: Any]
@@ -68,6 +68,7 @@ public enum HeaderParser {
             }
             if type == "world_state", payload["full"] as? Bool == true { fullState = true }
             if type == "turn_context" {
+                header?.model = payload["model"] as? String
                 let complete = fullState && roles.contains("developer") && roles.contains("user")
                     && header?.version != "未知" && header?.date != .distantPast
                 header?.complete = complete
@@ -92,10 +93,10 @@ public enum HeaderParser {
                     return header
                 }
                 let key = role + ":" + kind
-                counts[key] = (kind, role, (counts[key]?.characters ?? 0) + text.count)
+                counts[key] = (kind, role, (counts[key]?.tokens ?? 0) + TokenEstimate.count(text))
             }
             header?.blocks = counts.values.map {
-                ContextBlock(kind: $0.kind, role: $0.role, characters: $0.characters)
+                ContextBlock(kind: $0.kind, role: $0.role, tokens: $0.tokens)
             }.sorted { $0.kind < $1.kind }
         }
         return header

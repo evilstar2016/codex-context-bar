@@ -4,10 +4,13 @@ import Testing
 
 private func fixture(project: String = "/fixture/project", id: String = "baseline", date: Date = Date(timeIntervalSince1970: 1),
                      kinds: [String] = ["host_skills.instructions", "memories.instructions", "plugins.usage_instructions", "plugins.recommendations"],
-                     inherited: Bool = false, source: String = "desktop", offset: Int = 0) throws -> Data {
+                     inherited: Bool = false, source: String = "desktop", offset: Int = 0,
+                     model: String? = "gpt-5.6-sol") throws -> Data {
     let time = ISO8601DateFormatter().string(from: date)
     var meta: [String: Any] = ["id": id, "cwd": project, "timestamp": time, "cli_version": "0.154.0-alpha.6.2", "source": source]
     if inherited { meta["forked_from_id"] = "parent" }
+    var turnContext: [String: Any] = ["cwd": project]
+    if let model { turnContext["model"] = model }
     let records: [[String: Any]] = [
         ["type": "session_meta", "payload": meta],
         ["type": "response_item", "payload": ["role": "developer",
@@ -16,7 +19,7 @@ private func fixture(project: String = "/fixture/project", id: String = "baselin
         ["type": "response_item", "payload": ["role": "user", "content": [["text": "<skills_instructions>quoted, not real</skills_instructions>"]],
             "internal_chat_message_metadata_passthrough": ["content_item_kinds": ["agents_md.instructions"]]]],
         ["type": "world_state", "payload": ["full": true, "state": [:]]],
-        ["type": "turn_context", "payload": ["cwd": project]],
+        ["type": "turn_context", "payload": turnContext],
     ]
     return try records.enumerated().reduce(into: Data()) { data, item in
         var record = item.element
@@ -52,7 +55,9 @@ private final class Workspace {
     #expect(header.complete)
     #expect(!header.contains(.skillCatalog))
     #expect(header.blocks.count == 2)
-    #expect(header.characters > 0)
+    #expect(header.tokens > 0)
+    #expect(header.model == "gpt-5.6-sol")
+    #expect(header.tokens > 0)
 }
 
 @Test func inheritedAndNonzeroOrdinalsCannotProveAbsence() throws {
@@ -230,20 +235,42 @@ private final class Workspace {
         header("future", project: workspace.project.path, daysAgo: -1, kinds: allKinds),
     ]
     let summary = SavingsSummary(sessions: sessions, project: workspace.project, now: now)
-    let allCharacters = allKinds.reduce(0) { $0 + "Body for \($1)".count }
-    let olderCharacters = ["memories.instructions", "plugins.usage_instructions"].reduce(0) { $0 + "Body for \($1)".count }
-    let skillCharacters = "Body for host_skills.instructions".count
-    #expect(summary.current7.characters == allCharacters)
+    let allTokens = allKinds.reduce(0) { $0 + TokenEstimate.count("Body for \($1)") }
+    let olderTokens = ["memories.instructions", "plugins.usage_instructions"].reduce(0) { $0 + TokenEstimate.count("Body for \($1)") }
+    let skillTokens = TokenEstimate.count("Body for host_skills.instructions")
+    #expect(summary.current7.tokens == allTokens)
     #expect(summary.current7.sessionCount == 1)
     #expect(summary.current7.incompleteCount == 1)
-    #expect(summary.current30.characters == allCharacters + olderCharacters)
-    #expect(summary.all7.characters == allCharacters + skillCharacters)
+    #expect(summary.current30.tokens == allTokens + olderTokens)
+    #expect(summary.all7.tokens == allTokens + skillTokens)
     #expect(summary.all7.projectCount == 2)
-    #expect(summary.all30.characters == allCharacters + skillCharacters + olderCharacters)
+    #expect(summary.all30.tokens == allTokens + skillTokens + olderTokens)
     #expect(summary.all30.sessionCount == 3)
     #expect(summary.all30.allThreeCount == 1)
+    #expect(summary.all30.pricedSessionCount == 3)
+    #expect(abs((summary.all30.ordinaryUSD ?? -1) - Double(summary.all30.tokens) * 4 / 1_000_000) < 0.000000001)
+    #expect(abs((summary.all30.cachedUSD ?? -1) - Double(summary.all30.tokens) * 0.4 / 1_000_000) < 0.000000001)
     #expect(summary.all30.byTarget[.plugins] == ["plugins.usage_instructions", "plugins.recommendations", "plugins.usage_instructions"]
-        .reduce(0) { $0 + "Body for \($1)".count })
+        .reduce(0) { $0 + TokenEstimate.count("Body for \($1)") })
+}
+
+@Test func tokenAndPriceEstimatesKeepUnknownModelsOutOfDollars() throws {
+    #expect(TokenEstimate.count("") == 0)
+    #expect(TokenEstimate.count("abcdefgh") == 2)
+    #expect(TokenEstimate.count("你好") == 2)
+    let workspace = try Workspace()
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let known = try #require(HeaderParser.parse(fixture(project: workspace.project.path, id: "known", date: now),
+        file: workspace.root.appendingPathComponent("known.jsonl")))
+    let unknown = try #require(HeaderParser.parse(fixture(project: workspace.project.path, id: "unknown", date: now, model: nil),
+        file: workspace.root.appendingPathComponent("unknown.jsonl")))
+    let summary = SavingsSummary(sessions: [known, unknown], project: workspace.project, now: now)
+    #expect(summary.all7.sessionCount == 2)
+    #expect(summary.all7.pricedSessionCount == 1)
+    #expect(summary.all7.unpricedSessionCount == 1)
+    #expect(summary.all7.tokens == summary.current7.tokens)
+    #expect(abs((summary.all7.ordinaryUSD ?? -1) - InputPrice.forModel("gpt-5.6-sol")!.ordinaryCost(tokens: known.blocks
+        .filter { ControlTarget.allCases.flatMap(\.kinds).contains($0.kind) }.reduce(0) { $0 + $1.tokens })) < 0.000000001)
 }
 
 @Test func scannerIncludesAllRecentProjectsBeyondInspectorLimit() async throws {
@@ -280,7 +307,7 @@ private final class Workspace {
     try Data((text + String(repeating: "not JSON\n", count: 200_000)).utf8).write(to: file)
     let header = try #require(try HeaderParser.read(file))
     #expect(header.complete)
-    #expect(header.characters > 100_000)
+    #expect(header.tokens > 25_000)
 
     let incomplete = text.replacingOccurrences(of: "content_item_kinds", with: "unknown_metadata")
     try Data((incomplete + String(repeating: "not JSON\n", count: 200_000)).utf8).write(to: file)

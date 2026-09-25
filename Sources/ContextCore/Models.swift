@@ -44,7 +44,7 @@ public enum ControlTarget: String, CaseIterable, Codable, Identifiable, Sendable
 public struct ContextBlock: Identifiable, Sendable {
     public let kind: String
     public let role: String
-    public let characters: Int
+    public let tokens: Int
     public var id: String { role + ":" + kind }
     public var title: String {
         switch kind {
@@ -68,12 +68,13 @@ public struct SessionHeader: Identifiable, Sendable {
     public var project: String
     public var date: Date
     public var version: String
+    public var model: String?
     public var source: String
     public var file: URL
     public var blocks: [ContextBlock]
     public var complete: Bool
     public var issue: String?
-    public var characters: Int { blocks.reduce(0) { $0 + $1.characters } }
+    public var tokens: Int { blocks.reduce(0) { $0 + $1.tokens } }
     public func contains(_ target: ControlTarget) -> Bool {
         blocks.contains { target.kinds.contains($0.kind) }
     }

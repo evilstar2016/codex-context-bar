@@ -5,6 +5,7 @@
   <key>CFBundleIdentifier</key><string>com.evilstar.codex-context-bar</string>
   <key>CFBundleName</key><string>Codex Context Bar</string>
   <key>CFBundleDisplayName</key><string>Codex Context Bar</string>
+  <key>CFBundleDevelopmentRegion</key><string>zh-Hans</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1.0</string>
   <key>CFBundleVersion</key><string>1</string>
