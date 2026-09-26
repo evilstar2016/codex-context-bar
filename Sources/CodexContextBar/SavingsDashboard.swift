@@ -35,7 +35,7 @@ struct SavingsDashboard: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(InspectorTheme.background)
+            .background { GlassBackground() }
         }
         .alert(model.language.text("撤销这次配置修改？"), isPresented: Binding(
             get: { undoCandidate != nil }, set: { if !$0 { undoCandidate = nil } })) {

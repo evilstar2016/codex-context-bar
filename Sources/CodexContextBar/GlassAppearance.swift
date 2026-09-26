@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Keep the blur at full strength; only the graphite backing changes opacity.
+/// Native window blur stays opaque to interaction; the slider adjusts its tinted backing.
 struct GlassBackground: View {
     @AppStorage("glassTransparency") private var transparency = 0.65
     @Environment(\.colorScheme) private var colorScheme
@@ -9,8 +9,15 @@ struct GlassBackground: View {
 
     var body: some View {
         ZStack {
-            FrostedWindowMaterial(scheme: colorScheme)
-            Color(nsColor: .windowBackgroundColor).opacity(reduceTransparency ? 1 : 1 - min(max(transparency, 0), 0.85) * 0.45)
+            if reduceTransparency {
+                Color(nsColor: .windowBackgroundColor)
+            } else {
+                FrostedWindowMaterial(scheme: colorScheme)
+                Color(nsColor: .windowBackgroundColor)
+                    .opacity(1 - min(max(transparency, 0), 0.85))
+                LinearGradient(colors: [.white.opacity(colorScheme == .dark ? 0.06 : 0.22), .clear],
+                    startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
@@ -22,7 +29,7 @@ private struct FrostedWindowMaterial: NSViewRepresentable {
     let scheme: ColorScheme
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = WindowMaterialView()
-        view.material = .sidebar
+        view.material = .underWindowBackground
         view.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
         view.blendingMode = .behindWindow
         view.state = .active
@@ -44,12 +51,18 @@ private struct FrostedWindowMaterial: NSViewRepresentable {
 }
 
 struct GlassAppearanceControl: View {
+    var showsTitle = false
     @State private var showingAppearance = false
     @Environment(\.appLanguage) private var language
 
     var body: some View {
         Button { showingAppearance.toggle() } label: {
-            Image(systemName: "circle.lefthalf.filled")
+            if showsTitle {
+                Label(language.text("磨砂玻璃"), systemImage: "circle.lefthalf.filled")
+                    .font(.system(size: 12))
+            } else {
+                Image(systemName: "circle.lefthalf.filled")
+            }
         }
         .buttonStyle(.plain)
         .help(language.text("调整玻璃透明度"))
@@ -89,7 +102,11 @@ struct GlassAppearancePanel: View {
         .padding(22).frame(width: 290)
         .foregroundStyle(InspectorTheme.text)
         .background { GlassBackground() }
-
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(.white.opacity(reduceTransparency ? 0 : 0.18), lineWidth: 0.5)
+                .allowsHitTesting(false)
+        }
         .tint(InspectorTheme.teal)
     }
 }

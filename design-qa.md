@@ -82,3 +82,10 @@ Compared the actual workbench-light and updated inspector light/dark/compact ren
 Iteration: English Configuration label broke mid-word at 880×640; widened English state labels and re-rendered. The shared settings snapshot needed explicit semantic foreground/background; corrected and visually verified. Main screenshots are 1048×786, compact snapshots 880×640, shared settings 340×310, synthetic fixtures only. Both appearance modes, compact English labels and settings contents were inspected. The snapshot harness formats dates using its Chinese locale; production follows the app/system locale.
 
 47 tests, release app build and git diff --check passed. No configuration semantics changed. final result: passed for app-content visual checks; live mouse/keyboard and window-chrome interaction remain unverified. Evidence: inspector-light.png, inspector.png, inspector-compact.png, inspector-compact-en.png and shared-settings.png under docs/design.
+
+
+## 2026-09-27 — frosted-glass appearance
+
+Applied native behind-window underWindowBackground material to workbench content, inspector, context toolbar and settings, with a subtle adaptive white highlight and a fine settings-panel edge. The persisted 0–85% slider now directly controls backing opacity, retaining full-strength blur and opaque foreground controls. Reduce Transparency omits blur/highlights and uses a solid system surface. Settings labels the glass control; the compact menu retains its icon.
+
+Inspected rendered appearance panel, light workbench, dark inspector and final shared settings. 47 tests, release build and diff check pass. Offscreen images verify layout, foreground readability and the tint/highlight treatment only; they cannot establish actual WindowServer wallpaper blur or on-screen compositing. Live blur validation remains outstanding. No change to configuration or cost semantics.

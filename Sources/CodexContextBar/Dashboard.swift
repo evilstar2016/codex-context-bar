@@ -23,7 +23,7 @@ struct Dashboard: View {
                 }
             }
         }
-        .background(InspectorTheme.background)
+        .background { GlassBackground() }
         .foregroundStyle(InspectorTheme.text)
 
         .tint(InspectorTheme.teal)

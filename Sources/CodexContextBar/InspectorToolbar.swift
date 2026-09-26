@@ -34,8 +34,9 @@ struct WorkbenchSettings: View {
             }
             HStack {
                 Text(model.language.text("外观与透明度"))
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer()
-                GlassAppearanceControl()
+                GlassAppearanceControl(showsTitle: true)
             }
             Divider()
             Text(model.language.text("Codex 数据目录")).font(.subheadline)
@@ -45,7 +46,7 @@ struct WorkbenchSettings: View {
             Button(model.language.text("恢复默认数据目录")) { dismiss(); model.restoreDefaultCodexHome() }
         }
         .padding(20).frame(width: 300)
-        .foregroundStyle(InspectorTheme.text).background(InspectorTheme.background)
+        .foregroundStyle(InspectorTheme.text).background { GlassBackground() }
         .environment(\.appLanguage, model.language)
     }
 
@@ -93,6 +94,6 @@ struct SessionSelectionBar: View {
         }
         .font(.system(size: 13))
         .padding(.horizontal, 28).frame(height: 54)
-        .background(InspectorTheme.background)
+        .background { GlassBackground() }
     }
 }
