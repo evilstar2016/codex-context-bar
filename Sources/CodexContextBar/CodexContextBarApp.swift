@@ -19,11 +19,11 @@ struct CodexContextBarApp: App {
                 .preferredColorScheme(theme.colorScheme)
         } label: {
             Image(nsImage: Self.menuBarIcon)
-                .accessibilityLabel("Context Bar")
+                .accessibilityLabel("Codex Context Bar")
         }
         .menuBarExtraStyle(.window)
 
-        Window("Context Bar", id: "dashboard") {
+        Window("Codex Context Bar", id: "dashboard") {
             Dashboard(model: model).environment(\.locale, model.language.locale).environment(\.appLanguage, model.language)
                 .preferredColorScheme(theme.colorScheme)
         }
@@ -39,7 +39,7 @@ struct MenuContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Context Bar").font(.system(size: 22, weight: .medium)).padding(.bottom, 6)
+            Text("Codex Context Bar").font(.system(size: 22, weight: .medium)).padding(.bottom, 6)
             ProjectMenu(model: model)
                 .menuStyle(.borderlessButton).font(.system(size: 14))
                 .foregroundStyle(InspectorTheme.secondary).tint(InspectorTheme.secondary)
@@ -81,7 +81,7 @@ struct MenuContent: View {
                         .disabled(model.refreshing || model.project == nil)
                     Button(model.language.text("选择 Codex 数据目录…"), action: model.chooseCodexHome)
                     Button(model.language.text("恢复默认数据目录"), action: model.restoreDefaultCodexHome)
-                    Button(model.language.text("退出 Context Bar")) { NSApp.terminate(nil) }
+                    Button(model.language.text("退出 Codex Context Bar")) { NSApp.terminate(nil) }
                 } label: { Image(systemName: "ellipsis").font(.system(size: 12)) }
                 .menuStyle(.borderlessButton).frame(width: 18).accessibilityLabel(model.language.text("更多选项"))
             }.padding(.top, 18)

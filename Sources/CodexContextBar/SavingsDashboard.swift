@@ -58,8 +58,8 @@ struct SavingsDashboard: View {
                         .resizable().interpolation(.high).frame(width: 42, height: 42)
                         .accessibilityHidden(true)
                 }
-                Text("Context Bar").font(.system(size: 17, weight: .semibold))
-                Text(model.language.text("让 AI 专注于重要的内容"))
+                Text("Codex Context Bar").font(.system(size: 16, weight: .semibold))
+                Text(model.language.text("专注于 Codex 上下文优化"))
                     .font(.system(size: 12)).foregroundStyle(InspectorTheme.secondary)
             }
             .padding(.horizontal, 12).padding(.top, 26)
