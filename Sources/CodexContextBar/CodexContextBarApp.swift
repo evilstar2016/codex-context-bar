@@ -5,10 +5,19 @@ import SwiftUI
 @main
 struct CodexContextBarApp: App {
     @State private var model = AppModel()
+    private static let menuBarIcon: NSImage = {
+        let image = NSImage(contentsOf: Bundle.module.url(forResource: "MenuBarIcon", withExtension: "pdf")!)!
+        image.size = NSSize(width: 18, height: 18)
+        image.isTemplate = true
+        return image
+    }()
 
     var body: some Scene {
-        MenuBarExtra("Context Bar", systemImage: "text.bubble") {
+        MenuBarExtra {
             MenuContent(model: model).environment(\.locale, model.language.locale).environment(\.appLanguage, model.language)
+        } label: {
+            Image(nsImage: Self.menuBarIcon)
+                .accessibilityLabel("Context Bar")
         }
         .menuBarExtraStyle(.window)
 
