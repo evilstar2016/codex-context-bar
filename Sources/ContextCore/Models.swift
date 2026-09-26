@@ -74,6 +74,10 @@ public struct SessionHeader: Identifiable, Sendable {
     public var blocks: [ContextBlock]
     public var complete: Bool
     public var issue: String?
+    public var sessionID: String? = nil
+    public var responses: [ResponseUsage] = []
+    public var historyIssues: Int = 0
+    public var lastActivity: Date { responses.map(\.date).max().map { max(date, $0) } ?? date }
     public var tokens: Int { blocks.reduce(0) { $0 + $1.tokens } }
     public func contains(_ target: ControlTarget) -> Bool {
         blocks.contains { target.kinds.contains($0.kind) }

@@ -10,8 +10,7 @@ struct GlassBackground: View {
     var body: some View {
         ZStack {
             FrostedWindowMaterial(scheme: colorScheme)
-            InspectorTheme.background.opacity(reduceTransparency ? 1 : 1 - min(max(transparency, 0), 0.85) * 0.45)
-            LinearGradient(colors: [.white.opacity(reduceTransparency ? 0 : 0.045), .clear], startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color(nsColor: .windowBackgroundColor).opacity(reduceTransparency ? 1 : 1 - min(max(transparency, 0), 0.85) * 0.45)
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)

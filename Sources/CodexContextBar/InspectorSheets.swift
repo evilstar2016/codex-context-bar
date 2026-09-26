@@ -10,7 +10,7 @@ struct ConfigPreviewSheet: View {
             HStack {
                 Image(systemName: "slider.horizontal.3").foregroundStyle(InspectorTheme.teal)
                 Text(String(format: model.language.text("%@%@"), model.language.text(preview.enabled ? "开启" : "关闭"), model.language.text(preview.target.title)))
-                    .font(.system(size: 23, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
             }
             Text(model.language.text(preview.target.isGlobal ? "用户级 · 影响所有项目的新任务" : "项目级 · 仅影响当前项目的新任务"))
                 .font(.system(size: 13)).foregroundStyle(InspectorTheme.amber)
@@ -28,11 +28,12 @@ struct ConfigPreviewSheet: View {
             Text(model.language.text("保存后显示待验证。请在同一目录新建任务，已有会话不会因此删除继承的历史。"))
                 .font(.system(size: 13)).foregroundStyle(InspectorTheme.secondary).lineSpacing(3)
             HStack(spacing: 12) {
-                Button(model.language.text("取消")) { model.preview = nil }.buttonStyle(InspectorButtonStyle()).keyboardShortcut(.cancelAction)
-                Button(model.language.text("保存配置"), action: model.applyPreview).buttonStyle(InspectorButtonStyle(prominent: true))
-            }
+                Spacer()
+                Button(model.language.text("取消")) { model.preview = nil }.buttonStyle(.bordered).keyboardShortcut(.cancelAction)
+                Button(model.language.text("保存并等待验证"), action: model.applyPreview).buttonStyle(.borderedProminent).tint(InspectorTheme.button)
+            }.controlSize(.large)
         }
-        .padding(30).frame(width: 570)
+        .padding(28).frame(width: 570)
         .foregroundStyle(InspectorTheme.text).background { GlassBackground() }
     }
 }

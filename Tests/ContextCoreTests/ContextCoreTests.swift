@@ -217,60 +217,19 @@ private final class Workspace {
     #expect(changed.sessions.first?.contains(.skillCatalog) == false)
 }
 
-@Test func savingsSummaryUsesCompleteHeadersAndRollingWindows() throws {
+@Test func headersWithoutResponseUsageAreNotPriced() throws {
     let workspace = try Workspace()
     let now = Date(timeIntervalSince1970: 1_800_000_000)
-    let allKinds = ControlTarget.allCases.flatMap(\.kinds)
-    func header(_ id: String, project: String, daysAgo: Int, kinds: [String], inherited: Bool = false) throws -> SessionHeader {
-        try #require(HeaderParser.parse(fixture(project: project, id: id,
-            date: now.addingTimeInterval(TimeInterval(-daysAgo * 86_400)), kinds: kinds, inherited: inherited),
-            file: workspace.root.appendingPathComponent(id + ".jsonl")))
-    }
-    let sessions = try [
-        header("current", project: workspace.project.path, daysAgo: 2, kinds: allKinds),
-        header("other", project: "/another", daysAgo: 7, kinds: ["host_skills.instructions"]),
-        header("older", project: workspace.project.path, daysAgo: 20, kinds: ["memories.instructions", "plugins.usage_instructions"]),
-        header("partial", project: workspace.project.path, daysAgo: 1, kinds: allKinds, inherited: true),
-        header("expired", project: workspace.project.path, daysAgo: 31, kinds: allKinds),
-        header("future", project: workspace.project.path, daysAgo: -1, kinds: allKinds),
-    ]
-    let summary = SavingsSummary(sessions: sessions, project: workspace.project, now: now)
-    let allTokens = allKinds.reduce(0) { $0 + TokenEstimate.count("Body for \($1)") }
-    let olderTokens = ["memories.instructions", "plugins.usage_instructions"].reduce(0) { $0 + TokenEstimate.count("Body for \($1)") }
-    let skillTokens = TokenEstimate.count("Body for host_skills.instructions")
-    #expect(summary.current7.tokens == allTokens)
-    #expect(summary.current7.sessionCount == 1)
-    #expect(summary.current7.incompleteCount == 1)
-    #expect(summary.current30.tokens == allTokens + olderTokens)
-    #expect(summary.all7.tokens == allTokens + skillTokens)
-    #expect(summary.all7.projectCount == 2)
-    #expect(summary.all30.tokens == allTokens + skillTokens + olderTokens)
-    #expect(summary.all30.sessionCount == 3)
-    #expect(summary.all30.allThreeCount == 1)
-    #expect(summary.all30.pricedSessionCount == 3)
-    #expect(abs((summary.all30.ordinaryUSD ?? -1) - Double(summary.all30.tokens) * 4 / 1_000_000) < 0.000000001)
-    #expect(abs((summary.all30.cachedUSD ?? -1) - Double(summary.all30.tokens) * 0.4 / 1_000_000) < 0.000000001)
-    #expect(summary.all30.byTarget[.plugins] == ["plugins.usage_instructions", "plugins.recommendations", "plugins.usage_instructions"]
-        .reduce(0) { $0 + TokenEstimate.count("Body for \($1)") })
-}
-
-@Test func tokenAndPriceEstimatesKeepUnknownModelsOutOfDollars() throws {
-    #expect(TokenEstimate.count("") == 0)
-    #expect(TokenEstimate.count("abcdefgh") == 2)
+    let header = try #require(HeaderParser.parse(fixture(project: workspace.project.path, date: now),
+        file: workspace.root.appendingPathComponent("header.jsonl")))
+    let summary = SavingsSummary(sessions: [header], project: workspace.project, now: now).all30
+    #expect(summary.sessionCount == 1)
+    #expect(summary.tokens == 0)
+    #expect(summary.savingsUSD == nil)
+    #expect(summary.actualCost == nil)
+    #expect(summary.cost == nil)
+    #expect(summary.unpricedSessionCount == 1)
     #expect(TokenEstimate.count("你好") == 2)
-    let workspace = try Workspace()
-    let now = Date(timeIntervalSince1970: 1_800_000_000)
-    let known = try #require(HeaderParser.parse(fixture(project: workspace.project.path, id: "known", date: now),
-        file: workspace.root.appendingPathComponent("known.jsonl")))
-    let unknown = try #require(HeaderParser.parse(fixture(project: workspace.project.path, id: "unknown", date: now, model: nil),
-        file: workspace.root.appendingPathComponent("unknown.jsonl")))
-    let summary = SavingsSummary(sessions: [known, unknown], project: workspace.project, now: now)
-    #expect(summary.all7.sessionCount == 2)
-    #expect(summary.all7.pricedSessionCount == 1)
-    #expect(summary.all7.unpricedSessionCount == 1)
-    #expect(summary.all7.tokens == summary.current7.tokens)
-    #expect(abs((summary.all7.ordinaryUSD ?? -1) - InputPrice.forModel("gpt-5.6-sol")!.ordinaryCost(tokens: known.blocks
-        .filter { ControlTarget.allCases.flatMap(\.kinds).contains($0.kind) }.reduce(0) { $0 + $1.tokens })) < 0.000000001)
 }
 
 @Test func scannerIncludesAllRecentProjectsBeyondInspectorLimit() async throws {
@@ -294,7 +253,7 @@ private final class Workspace {
     #expect(scan.recentSessions.count == 501)
     #expect(scan.warning == nil)
     let summary = SavingsSummary(sessions: scan.recentSessions, project: workspace.project, now: now)
-    #expect(summary.all30.sessionCount == 500)
+    #expect(summary.all30.sessionCount == 501)
     #expect(summary.all30.incompleteCount == 1)
     #expect(summary.all30.projectCount == 2)
 }
@@ -314,4 +273,32 @@ private final class Workspace {
     let unknown = try #require(try HeaderParser.read(file))
     #expect(!unknown.complete)
     #expect(unknown.issue == "缺少可信 content item metadata")
+}
+
+
+@Test func scannerIncludesRecentResponsesFromOldSessionsAndDeduplicatesSessionIDs() async throws {
+    let workspace = try Workspace()
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let root = workspace.home.appendingPathComponent("sessions")
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    var data = try fixture(project: workspace.project.path, id: "old", date: now.addingTimeInterval(-40 * 86_400))
+    let records: [[String: Any]] = [
+        ["type": "turn_context", "ordinal": 5, "payload": ["turn_id": "turn", "model": "gpt-6-astra"]],
+        ["type": "token_usage_record", "ordinal": 6, "payload": ["thread_id": "old", "turn_id": "turn",
+            "response_id": "response", "usage": ["input_tokens": 1000, "cached_input_tokens": 800,
+                "cache_write_input_tokens": 0, "output_tokens": 100, "reasoning_output_tokens": 50, "total_tokens": 1100]]],
+    ]
+    for var record in records {
+        record["timestamp"] = ISO8601DateFormatter().string(from: now)
+        data.append(try JSONSerialization.data(withJSONObject: record)); data.append(10)
+    }
+    try data.write(to: root.appendingPathComponent("active.jsonl"))
+    try fixture(project: workspace.project.path, id: "old", date: now.addingTimeInterval(-40 * 86_400))
+        .write(to: root.appendingPathComponent("duplicate.jsonl"))
+    let scan = try await SessionRepository().scan(codexHome: workspace.home, project: workspace.project, now: now)
+    #expect(scan.recentSessions.count == 1)
+    let snapshot = SavingsSummary(sessions: scan.recentSessions, project: workspace.project, now: now).current7
+    #expect(snapshot.responseCount == 1)
+    #expect(snapshot.actualCostCoverage == 1)
+    #expect(abs((snapshot.actualCost ?? -1) - 0.0131) < 1e-12)
 }

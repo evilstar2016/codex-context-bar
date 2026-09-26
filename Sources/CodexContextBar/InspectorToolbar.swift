@@ -51,11 +51,12 @@ struct SessionSelectionBar: View {
         HStack(spacing: 16) {
             ProjectMenu(model: model).labelStyle(.titleAndIcon).frame(maxWidth: 240, alignment: .leading)
             Divider().frame(height: 20)
-            Picker(model.language.text("页面"), selection: $model.showingSavings) {
-                Text(model.language.text("收益仪表盘")).tag(true)
-                Text(model.language.text("会话检查器")).tag(false)
+            Button {
+                model.showingSavings = true
+            } label: {
+                Label(model.language.text("返回优化"), systemImage: "chevron.left")
             }
-            .pickerStyle(.segmented).frame(width: 230)
+            .buttonStyle(.plain)
             if !model.showingSavings {
                 Divider().frame(height: 20)
                 Menu {

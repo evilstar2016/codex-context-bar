@@ -3,6 +3,8 @@ import ContextCore
 import Foundation
 import Observation
 
+enum SavingsScope { case project, all }
+
 @MainActor @Observable
 final class AppModel {
     var language = AppLanguage.chinese {
@@ -12,7 +14,57 @@ final class AppModel {
     var codexHome: URL
     var sessions: [SessionHeader] = []
     var savings: SavingsSummary?
+    var actualSavings: SavingsSummary?
+    var pricingMode = SavingsPricingMode.maximum
+    var displayedSavings: SavingsSummary? { pricingMode == .maximum ? savings : actualSavings }
+
+    func togglePricingMode() { pricingMode = pricingMode == .maximum ? .actual : .maximum }
     var showingSavings = true
+    var savingsScope = SavingsScope.project
+    var savingsDays = 30
+    var optimizationTarget: ControlTarget? = .skillCatalog
+    var activeSavings: SavingsSnapshot? {
+        guard let summary = displayedSavings else { return nil }
+        if savingsScope == .all { return savingsDays == 7 ? summary.all7 : summary.all30 }
+        return savingsDays == 7 ? summary.current7 : summary.current30
+    }
+    var menuActionTitle: String {
+        if attentionCount > 0 { return "查看需检查项" }
+        return pendingCount > 0 ? "继续验证" : "查看项目概览"
+    }
+
+    func openWorkbench() {
+        showingSavings = true
+        savingsScope = .project
+        let attention = latestOperations.first { [.mismatch, .configChanged].contains(verification[$0.id]?.state) }
+        let pending = latestOperations.first { verification[$0.id]?.state == .waiting }
+        if let operation = attention ?? pending { optimizationTarget = operation.target }
+    }
+
+    func showEvidence(_ target: ControlTarget) {
+        selectedKind = InspectorItem.primary.first { $0.target == target }?.id ?? selectedKind
+        showingSavings = false
+    }
+
+    func previewOptimization(_ target: ControlTarget) {
+        guard savingsScope == .project, configProblems[target] == nil else { return }
+        optimizationTarget = target
+        selectedKind = InspectorItem.primary.first { $0.target == target }?.id ?? selectedKind
+        selectUsableSession()
+        guard selected?.complete == true else { return }
+        prepare(target, enabled: configuredValues[target] == false)
+    }
+
+    func optimizationStatus(_ target: ControlTarget) -> String {
+        switch result(for: target)?.state {
+        case .waiting: return "已保存，等待新任务验证"
+        case .observed: return "新任务已验证"
+        case .mismatch: return "新任务观测不符"
+        case .configChanged: return "配置已变化"
+        case .restored: return "已撤销 · 待新观测"
+        case nil: return configuredValues[target] == false ? "已保存关闭 · 尚未验证" : "尚未调整"
+        }
+    }
     var selectedID: String?
     var selectedKind = InspectorItem.primary[0].id
     var recentProjects: [String] = []
@@ -113,8 +165,9 @@ final class AppModel {
     }
 
     private func clearProjectState() {
-        sessions = []; savings = nil; selectedID = nil; operations = []; verification = [:]; preview = nil
+        sessions = []; savings = nil; actualSavings = nil; selectedID = nil; operations = []; verification = [:]; preview = nil
         selectedKind = InspectorItem.primary[0].id
+        savingsScope = .project; optimizationTarget = .skillCatalog
         configuredValues = [:]; configProblems = [:]; warning = nil; lastRefresh = nil
     }
 
@@ -179,6 +232,7 @@ final class AppModel {
             loadConfiguration()
             sessions = scan.sessions
             savings = SavingsSummary(sessions: scan.recentSessions, project: project, now: now)
+            actualSavings = SavingsSummary(sessions: scan.recentSessions, project: project, now: now, pricingMode: .actual)
             warning = scan.warning
             if !sessions.contains(where: { $0.id == selectedID }) { selectUsableSession() }
             operations = try store.operations(project: project)
@@ -196,11 +250,9 @@ final class AppModel {
     }
 
     func guideToDisable(_ target: ControlTarget) {
-        selectedKind = InspectorItem.primary.first { $0.target == target }?.id ?? selectedKind
-        showingSavings = false
-        guard configuredValues[target] != false, configProblems[target] == nil else { return }
-        selectUsableSession()
-        if selected?.complete == true { prepare(target, enabled: false) }
+        showingSavings = true
+        guard configuredValues[target] != false else { optimizationTarget = target; return }
+        previewOptimization(target)
     }
 
     func applyPreview() {

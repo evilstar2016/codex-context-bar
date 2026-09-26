@@ -10,11 +10,11 @@ struct Dashboard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SessionSelectionBar(model: model)
-            InspectorDivider()
             if model.showingSavings {
                 SavingsDashboard(model: model)
             } else {
+                SessionSelectionBar(model: model)
+                InspectorDivider()
                 GeometryReader { geometry in
                     HSplitView {
                         overview
@@ -30,7 +30,7 @@ struct Dashboard: View {
 
         .tint(InspectorTheme.teal)
         .frame(minWidth: 880, minHeight: 640)
-        .toolbar { InspectorToolbar(model: model) }
+        .toolbar { if !model.showingSavings { InspectorToolbar(model: model) } }
         .sheet(item: $model.preview) { preview in ConfigPreviewSheet(model: model, preview: preview) }
         .sheet(isPresented: $model.showingHistory) { OperationHistorySheet(model: model) }
         .alert(model.language.text("无法完成操作"), isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {

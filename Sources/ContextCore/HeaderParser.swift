@@ -50,6 +50,7 @@ public enum HeaderParser {
                     date: date(time) ?? .distantPast, version: payload["cli_version"] as? String ?? "未知", model: nil,
                     source: payload["source"] as? String ?? "未知", file: file, blocks: [], complete: false,
                     issue: "未找到完整初始会话头")
+                header?.sessionID = payload["session_id"] as? String
                 let base = payload["history_base"] as? [String: Any]
                 if payload["forked_from_id"] != nil || payload["parent_thread_id"] != nil
                     || (base?["end_ordinal_exclusive"] as? Int ?? 0) > 0 {
