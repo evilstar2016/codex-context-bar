@@ -85,7 +85,7 @@ struct SavingsDashboard: View {
                     Label(model.language.text("设置"), systemImage: "gearshape")
                         .frame(maxWidth: .infinity, alignment: .leading).padding(10)
                 }
-                .popover(isPresented: $showingSettings) { settings }
+                .popover(isPresented: $showingSettings) { WorkbenchSettings(model: model) }
             }
             .buttonStyle(.plain).font(.system(size: 13))
             .padding(.bottom, 14)
@@ -359,28 +359,6 @@ struct SavingsDashboard: View {
         }
         .frame(maxWidth: 430, alignment: .leading).padding(36)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-
-    private var settings: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text(model.language.text("设置")).font(.headline)
-            Picker(model.language.text("语言"), selection: $model.language) {
-                Text("简体中文").tag(AppLanguage.chinese)
-                Text("English").tag(AppLanguage.english)
-            }
-            HStack {
-                Text(model.language.text("外观与透明度"))
-                Spacer()
-                GlassAppearanceControl()
-            }
-            Divider()
-            Text(model.language.text("Codex 数据目录")).font(.subheadline)
-            Text(model.codexHome.path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-            Button(model.language.text("选择 Codex 数据目录…")) { showingSettings = false; model.chooseCodexHome() }
-            Button(model.language.text("恢复默认数据目录")) { showingSettings = false; model.restoreDefaultCodexHome() }
-        }
-        .padding(20).frame(width: 300).environment(\.appLanguage, model.language)
     }
 
     private func money(_ range: ClosedRange<Double>?) -> String {

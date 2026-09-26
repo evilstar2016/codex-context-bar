@@ -15,22 +15,19 @@ struct Dashboard: View {
             } else {
                 SessionSelectionBar(model: model)
                 InspectorDivider()
-                GeometryReader { geometry in
-                    HSplitView {
-                        overview
-                            .frame(minWidth: 470, idealWidth: 628, maxWidth: .infinity, maxHeight: .infinity)
-                        inspector(compact: geometry.size.height < 720)
-                            .frame(minWidth: 340, idealWidth: 420, maxWidth: 420, maxHeight: .infinity)
-                    }
+                HSplitView {
+                    overview
+                        .frame(minWidth: 470, idealWidth: 628, maxWidth: .infinity, maxHeight: .infinity)
+                    inspector
+                        .frame(minWidth: 340, idealWidth: 420, maxWidth: 420, maxHeight: .infinity)
                 }
             }
         }
-        .background { GlassBackground() }
+        .background(InspectorTheme.background)
         .foregroundStyle(InspectorTheme.text)
 
         .tint(InspectorTheme.teal)
         .frame(minWidth: 880, minHeight: 640)
-        .toolbar { if !model.showingSavings { InspectorToolbar(model: model) } }
         .sheet(item: $model.preview) { preview in ConfigPreviewSheet(model: model, preview: preview) }
         .sheet(isPresented: $model.showingHistory) { OperationHistorySheet(model: model) }
         .alert(model.language.text("无法完成操作"), isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
@@ -48,9 +45,9 @@ struct Dashboard: View {
                 Text(model.language.text(model.isDesignPreview ? "示例会话" : "历史会话"))
                     .font(.system(size: 12)).foregroundStyle(InspectorTheme.secondary)
                 Text(model.language.text(model.selected?.id == model.sessions.first?.id ? "最近会话的初始上下文" : "所选会话的初始上下文"))
-                    .font(.system(size: 30, weight: .semibold))
+                    .font(.system(size: 26, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
-                Text(sessionSubtitle).font(.system(size: 15)).foregroundStyle(InspectorTheme.secondary)
+                Text(sessionSubtitle).font(.system(size: 14)).foregroundStyle(InspectorTheme.secondary)
             }.padding(.bottom, 20)
             if let session = model.selected, !session.complete {
                 VStack(alignment: .leading, spacing: 10) {
@@ -98,7 +95,7 @@ struct Dashboard: View {
                                     Text(String(format: model.language.text("%d 项"), otherItems.count)).frame(width: 84, alignment: .leading)
                                     Text(otherItems.compactMap { $0.tokens(in: model.selected) }.reduce(0, +).formatted()).monospacedDigit().frame(width: 80, alignment: .trailing)
                                 }
-                                .font(.system(size: 15)).foregroundStyle(InspectorTheme.secondary)
+                                .font(.system(size: 13)).foregroundStyle(InspectorTheme.secondary)
                                 .padding(.horizontal, 20).frame(minHeight: 62).contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -106,13 +103,11 @@ struct Dashboard: View {
                             if expandedOthers { ForEach(otherItems) { item in itemRow(item) } }
                         }
                     }
-                    .background(.white.opacity(0.025))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(InspectorTheme.line))
+
 
 
                 }
-                .scrollIndicators(.visible)
+                .scrollIndicators(.automatic)
             }
             if let warning = model.warning {
                 inlineNotice(model.language.text(warning))
@@ -141,16 +136,17 @@ struct Dashboard: View {
                 showingEvidence = false
             } label: {
                 HStack(spacing: 14) {
-                    Image(systemName: item.symbol).font(.system(size: 20, weight: .light)).frame(width: 20)
-                    Text(model.language.text(item.title)).fontWeight(model.selectedKind == item.id ? .medium : .regular)
+                    Image(systemName: item.symbol).font(.system(size: 20, weight: .regular)).frame(width: 20)
+                        .foregroundStyle(model.selectedKind == item.id ? InspectorTheme.teal : InspectorTheme.secondary)
+                    Text(model.language.text(item.title)).lineLimit(2).truncationMode(.middle).fontWeight(model.selectedKind == item.id ? .medium : .regular)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(model.language.text(item.observation(in: model.selected))).frame(width: 84, alignment: .leading)
                     Text(item.tokens(in: model.selected)?.formatted() ?? "—")
                         .monospacedDigit().frame(width: 80, alignment: .trailing)
                 }
-                .font(.system(size: 15))
+                .font(.system(size: 13))
                 .padding(.horizontal, 20).frame(minHeight: 56)
-                .background(model.selectedKind == item.id ? InspectorTheme.selection : .clear)
+                .background(model.selectedKind == item.id ? InspectorTheme.selection.opacity(0.5) : .clear, in: RoundedRectangle(cornerRadius: 8))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -159,41 +155,41 @@ struct Dashboard: View {
         }
     }
 
-    private func inspector(compact: Bool) -> some View {
+    private var inspector: some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .center, spacing: 20) {
+                    HStack(alignment: .center, spacing: 14) {
                         Image(systemName: model.selectedItem.symbol)
-                            .font(.system(size: 44, weight: .light)).foregroundStyle(InspectorTheme.secondary)
+                            .font(.system(size: 28, weight: .regular)).foregroundStyle(InspectorTheme.teal)
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(model.language.text(model.selectedItem.title)).font(.system(size: 25, weight: .semibold))
+                            Text(model.language.text(model.selectedItem.title)).font(.system(size: 20, weight: .semibold))
                                 .fixedSize(horizontal: false, vertical: true)
                             Text(model.language.text(model.selectedItem.scope)).font(.system(size: 14)).foregroundStyle(InspectorTheme.secondary)
                         }
                     }
-                    .padding(.leading, 10)
-                    .padding(.top, compact ? 34 : 66).padding(.bottom, compact ? 30 : 46)
+                    .padding(.top, 30).padding(.bottom, 24)
                     InspectorDivider()
-                    VStack(alignment: .leading, spacing: compact ? 18 : 22) {
+                    VStack(alignment: .leading, spacing: 18) {
                         detailRow("配置状态", value: model.configurationLabel(for: model.selectedItem.target))
                         detailRow("所选观测", value: model.language.text(model.selectedItem.observation(in: model.selected)))
                         HStack(alignment: .top, spacing: 18) {
-                            Text(model.language.text("当前状态")).foregroundStyle(InspectorTheme.secondary).frame(width: 78, alignment: .leading)
+                            Text(model.language.text("当前状态")).foregroundStyle(InspectorTheme.secondary).frame(width: model.language == .english ? 104 : 78, alignment: .leading)
                             StatusLabel(text: model.language.text(statusText), color: statusColor).fixedSize(horizontal: false, vertical: true)
-                        }.font(.system(size: 15))
-                    }.padding(.vertical, compact ? 22 : 34)
-                    actions.padding(.top, compact ? 14 : 50).padding(.bottom, compact ? 24 : 48)
+                        }.font(.system(size: 13))
+                    }.padding(.vertical, 24)
+                    actions.padding(.top, 8).padding(.bottom, 24)
                     InspectorDivider()
-                    evidence.padding(.vertical, compact ? 22 : 40)
+                    evidence.padding(.vertical, 24)
                 }
             }.scrollIndicators(.automatic)
             InspectorDivider()
             Text(model.language.text(model.selectedItem.consequence))
                 .font(.system(size: 12)).lineSpacing(3).foregroundStyle(InspectorTheme.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 18).padding(.bottom, compact ? 20 : 36)
+                .padding(.vertical, 18)
         }.padding(.horizontal, 28)
+            .background(InspectorTheme.raised.opacity(0.45))
     }
 
     @ViewBuilder private var actions: some View {
@@ -203,17 +199,17 @@ struct Dashboard: View {
                     .fixedSize(horizontal: false, vertical: true).padding(.bottom, 8)
                 if let result = model.result(for: target), result.state == .waiting || result.state == .mismatch || result.state == .configChanged {
                     Button(model.language.text(model.refreshing ? "正在检查…" : "检查新任务")) { Task { await model.refresh() } }
-                        .buttonStyle(InspectorButtonStyle(prominent: true)).disabled(model.refreshing)
+                        .buttonStyle(.borderedProminent).controlSize(.large).disabled(model.refreshing)
                 } else {
                     Button(model.language.text(model.configuredValues[target] == false ? "预览开启" : "预览关闭")) {
                         model.prepare(target, enabled: model.configuredValues[target] == false)
                     }
-                    .buttonStyle(InspectorButtonStyle(prominent: true))
+                    .buttonStyle(.borderedProminent).controlSize(.large)
                     .disabled(model.selected?.complete != true || model.configProblems[target] != nil)
                 }
                 if let operation = model.operation(for: target), !operation.restored {
                     Button(model.language.text("撤销此次修改")) { undoCandidate = operation }
-                        .buttonStyle(InspectorButtonStyle())
+                        .buttonStyle(.bordered)
                 }
                 if let result = model.result(for: target), result.state == .configChanged {
                     Button(model.language.text("重新预览配置")) { model.prepare(target, enabled: model.configuredValues[target] == false) }
@@ -227,7 +223,7 @@ struct Dashboard: View {
                     .font(.system(size: 14)).lineSpacing(4).foregroundStyle(InspectorTheme.secondary)
                 if model.selectedItem.id == "plugins.recommendations" {
                     Button(model.language.text("查看 Plugins 功能")) { model.selectedKind = "plugins.usage_instructions" }
-                        .buttonStyle(InspectorButtonStyle())
+                        .buttonStyle(.bordered)
                 }
             }
         }
@@ -280,9 +276,9 @@ struct Dashboard: View {
 
     private func detailRow(_ title: String, value: String) -> some View {
         HStack(alignment: .top, spacing: 18) {
-            Text(model.language.text(title)).foregroundStyle(InspectorTheme.secondary).frame(width: 78, alignment: .leading)
+            Text(model.language.text(title)).foregroundStyle(InspectorTheme.secondary).frame(width: model.language == .english ? 104 : 78, alignment: .leading)
             Text(value).fixedSize(horizontal: false, vertical: true)
-        }.font(.system(size: 15))
+        }.font(.system(size: 13))
     }
 
     private var statusText: String {
@@ -338,7 +334,7 @@ struct Dashboard: View {
             Text(model.language.text(title)).font(.system(size: 21, weight: .medium))
             Text(model.language.text(description)).font(.system(size: 14)).foregroundStyle(InspectorTheme.secondary).lineSpacing(4)
             Button(model.language.text(model.project == nil ? "选择项目" : "检查会话"), action: action)
-                .buttonStyle(InspectorButtonStyle(prominent: true)).frame(maxWidth: 240).disabled(model.refreshing)
+                .buttonStyle(.borderedProminent).controlSize(.large).frame(maxWidth: 240).disabled(model.refreshing)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 42)
     }
 }

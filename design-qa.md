@@ -73,3 +73,12 @@ Source is 1448×1086 pixels including a generated window frame and surrounding s
 Evidence: `docs/design/workbench-light.png`, `workbench-dark.png`, `workbench-compact-en.png`, `workbench-all.png`, `workbench-no-data.png`, `workbench-welcome.png`, `workbench-pending.png`.
 
 final result: passed for native app-content layout and automated state verification. Live mouse/keyboard, active-window control coloring and compositor blur remain unverified: the native Computer Use connection previously timed out (-10005). This is not a claim of completed end-to-end GUI validation.
+
+
+## 2026-09-27 — unify session details with the workbench
+
+Compared the actual workbench-light and updated inspector light/dark/compact renders in the same tool response. The user's screenshot identified oversized titlebar controls, dense boxed rows and excessive detail-panel spacing. The inspector now uses the main screen's semantic surfaces, 26pt heading, 13–14pt body, 54pt context toolbar, subtle 8pt selection radius and restrained teal icons. Back navigation comes first; refresh and a single More menu replace the separate titlebar appearance/language menus. Both pages use WorkbenchSettings. Native compact actions replace full-width custom buttons.
+
+Iteration: English Configuration label broke mid-word at 880×640; widened English state labels and re-rendered. The shared settings snapshot needed explicit semantic foreground/background; corrected and visually verified. Main screenshots are 1048×786, compact snapshots 880×640, shared settings 340×310, synthetic fixtures only. Both appearance modes, compact English labels and settings contents were inspected. The snapshot harness formats dates using its Chinese locale; production follows the app/system locale.
+
+47 tests, release app build and git diff --check passed. No configuration semantics changed. final result: passed for app-content visual checks; live mouse/keyboard and window-chrome interaction remain unverified. Evidence: inspector-light.png, inspector.png, inspector-compact.png, inspector-compact-en.png and shared-settings.png under docs/design.

@@ -22,62 +22,77 @@ struct ProjectMenu: View {
     }
 }
 
-struct InspectorToolbar: ToolbarContent {
+struct WorkbenchSettings: View {
     @Bindable var model: AppModel
-    var body: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            Button { Task { await model.refresh() } } label: {
-                if model.refreshing { ProgressView().controlSize(.small) }
-                else { Image(systemName: "arrow.clockwise") }
-            }.disabled(model.refreshing || model.project == nil).help(model.language.text("检查新的会话记录")).accessibilityLabel(model.language.text("刷新会话"))
-            GlassAppearanceControl()
-            Menu {
-                Button(model.language.text("简体中文")) { model.language = .chinese }
-                Button("English") { model.language = .english }
-            } label: { Image(systemName: "globe") }
-            .accessibilityLabel(model.language.text("语言"))
-            Menu {
-                Button(model.language.text("修改记录")) { model.showingHistory = true }
-                Button(model.language.text("选择 Codex 数据目录…"), action: model.chooseCodexHome)
-            } label: { Image(systemName: "ellipsis.circle") }
-            .accessibilityLabel(model.language.text("更多选项"))
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(model.language.text("设置")).font(.headline)
+            Picker(model.language.text("语言"), selection: $model.language) {
+                Text("简体中文").tag(AppLanguage.chinese)
+                Text("English").tag(AppLanguage.english)
+            }
+            HStack {
+                Text(model.language.text("外观与透明度"))
+                Spacer()
+                GlassAppearanceControl()
+            }
+            Divider()
+            Text(model.language.text("Codex 数据目录")).font(.subheadline)
+            Text(model.codexHome.path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(model.language.text("选择 Codex 数据目录…")) { dismiss(); model.chooseCodexHome() }
+            Button(model.language.text("恢复默认数据目录")) { dismiss(); model.restoreDefaultCodexHome() }
         }
+        .padding(20).frame(width: 300)
+        .foregroundStyle(InspectorTheme.text).background(InspectorTheme.background)
+        .environment(\.appLanguage, model.language)
     }
+
 }
 
 struct SessionSelectionBar: View {
     @Bindable var model: AppModel
+    @State private var showingSettings = false
+
     var body: some View {
-        HStack(spacing: 16) {
-            ProjectMenu(model: model).labelStyle(.titleAndIcon).frame(maxWidth: 240, alignment: .leading)
-            Divider().frame(height: 20)
-            Button {
-                model.showingSavings = true
-            } label: {
+        HStack(spacing: 14) {
+            Button { model.showingSavings = true } label: {
                 Label(model.language.text("返回优化"), systemImage: "chevron.left")
             }
             .buttonStyle(.plain)
-            if !model.showingSavings {
-                Divider().frame(height: 20)
-                Menu {
-                    if model.sessions.isEmpty { Text(model.language.text("暂无会话")) }
-                    ForEach(model.sessions) { session in
-                        Button { model.selectedID = session.id } label: {
-                            Text("\(session.id == model.selected?.id ? "✓ " : "")\(session.date.formatted(date: .abbreviated, time: .shortened)) · \(session.id.suffix(8)) · \(model.language.text(session.complete ? "完整" : "不完整"))")
-                        }
+            Divider().frame(height: 18)
+            ProjectMenu(model: model).labelStyle(.titleOnly).frame(maxWidth: 160, alignment: .leading)
+            Menu {
+                if model.sessions.isEmpty { Text(model.language.text("暂无会话")) }
+                ForEach(model.sessions) { session in
+                    Button { model.selectedID = session.id } label: {
+                        Text("\(session.id == model.selected?.id ? "✓ " : "")\(session.date.formatted(date: .abbreviated, time: .shortened)) · \(session.id.suffix(8)) · \(model.language.text(session.complete ? "完整" : "不完整"))")
                     }
-                } label: {
-                    Label(model.selected.map { "\($0.date.formatted(date: .abbreviated, time: .shortened)) · \(model.language.text($0.complete ? "完整" : "不完整"))" } ?? model.language.text("选择会话"), systemImage: "calendar")
-                }.disabled(model.sessions.isEmpty).labelStyle(.titleAndIcon)
+                }
+            } label: {
+                Text(model.selected.map { "\($0.date.formatted(date: .abbreviated, time: .shortened)) · \(model.language.text($0.complete ? "完整" : "不完整"))" } ?? model.language.text("选择会话"))
+                    .lineLimit(1)
             }
-            Spacer(minLength: 0)
-            Text(model.showingSavings ? model.savings.map { String(format: model.language.text("%d 个完整会话"), $0.all30.sessionCount) } ?? model.language.text("等待扫描")
-                : String(format: model.language.text("%d 个会话"), model.sessions.count))
-                .font(.caption).foregroundStyle(InspectorTheme.secondary)
+            .disabled(model.sessions.isEmpty)
+            .accessibilityLabel(model.language.text("选择会话"))
+            Spacer(minLength: 8)
+            Button { Task { await model.refresh() } } label: {
+                if model.refreshing { ProgressView().controlSize(.small) }
+                else { Image(systemName: "arrow.clockwise") }
+            }
+            .disabled(model.refreshing || model.project == nil)
+            .help(model.language.text("检查新的会话记录"))
+            .accessibilityLabel(model.language.text("刷新会话"))
+            Menu {
+                Button(model.language.text("修改记录")) { model.showingHistory = true }
+                Button(model.language.text("设置")) { showingSettings = true }
+            } label: { Image(systemName: "ellipsis") }
+            .accessibilityLabel(model.language.text("更多选项"))
+            .popover(isPresented: $showingSettings) { WorkbenchSettings(model: model) }
         }
-        .menuStyle(.borderlessButton)
-        .tint(InspectorTheme.text)
-        .padding(.horizontal, 24).padding(.vertical, 14)
-        .background(.white.opacity(0.035))
+        .font(.system(size: 13))
+        .padding(.horizontal, 28).frame(height: 54)
+        .background(InspectorTheme.background)
     }
 }

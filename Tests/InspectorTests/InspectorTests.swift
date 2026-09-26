@@ -201,6 +201,10 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     try snapshot(MenuContent(model: fixture.model), size: CGSize(width: 316, height: 400), to: destination.appendingPathComponent("menu-light.png"), scheme: .light)
     try snapshot(MenuContent(model: fixture.model), size: CGSize(width: 316, height: 356), to: destination.appendingPathComponent("menu.png"))
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 880, height: 640), to: destination.appendingPathComponent("inspector-compact.png"))
+    fixture.model.language = .english
+    try snapshot(Dashboard(model: fixture.model).environment(\.locale, fixture.model.language.locale), size: CGSize(width: 880, height: 640), to: destination.appendingPathComponent("inspector-compact-en.png"), scheme: .light)
+    try snapshot(WorkbenchSettings(model: fixture.model), size: CGSize(width: 340, height: 310), to: destination.appendingPathComponent("shared-settings.png"), scheme: .light)
+    fixture.model.language = .chinese
     fixture.model.selectedKind = "plugins.recommendations"
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("recommendations.png"))
     let project = try #require(fixture.model.project)
