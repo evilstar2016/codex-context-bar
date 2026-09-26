@@ -272,3 +272,17 @@
 "尚未调整" = "Not adjusted";
 "返回优化" = "Back to overview";
 "保存并等待验证" = "Save and verify next";
+
+"主题" = "Theme";
+
+"跟随系统" = "System";
+
+"浅色" = "Light";
+
+"深色" = "Dark";
+
+"专注于 Codex 上下文优化" = "Optimize your Codex context";
+
+"退出 Codex Context Bar" = "Quit Codex Context Bar";
+
+"通透度即时保存。100% 移除底色，保留系统模糊；文字与按钮不透明。" = "Changes save immediately. At 100%, the tint is removed while system blur remains. Text and controls stay opaque.";

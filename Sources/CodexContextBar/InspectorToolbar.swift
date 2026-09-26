@@ -23,6 +23,7 @@ struct ProjectMenu: View {
 }
 
 struct WorkbenchSettings: View {
+    @AppStorage("appTheme") private var theme = AppTheme.system
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
     var body: some View {
@@ -31,6 +32,11 @@ struct WorkbenchSettings: View {
             Picker(model.language.text("语言"), selection: $model.language) {
                 Text("简体中文").tag(AppLanguage.chinese)
                 Text("English").tag(AppLanguage.english)
+            }
+            Picker(model.language.text("主题"), selection: $theme) {
+                ForEach(AppTheme.allCases, id: \.self) { theme in
+                    Text(model.language.text(theme.title)).tag(theme)
+                }
             }
             HStack {
                 Text(model.language.text("外观与透明度"))

@@ -203,7 +203,7 @@ private func makeHeader(project: URL, file: URL, kinds: [(String, Int)]? = nil) 
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 880, height: 640), to: destination.appendingPathComponent("inspector-compact.png"))
     fixture.model.language = .english
     try snapshot(Dashboard(model: fixture.model).environment(\.locale, fixture.model.language.locale), size: CGSize(width: 880, height: 640), to: destination.appendingPathComponent("inspector-compact-en.png"), scheme: .light)
-    try snapshot(WorkbenchSettings(model: fixture.model), size: CGSize(width: 340, height: 310), to: destination.appendingPathComponent("shared-settings.png"), scheme: .light)
+    try snapshot(WorkbenchSettings(model: fixture.model), size: CGSize(width: 340, height: 360), to: destination.appendingPathComponent("shared-settings.png"), scheme: .light)
     fixture.model.language = .chinese
     fixture.model.selectedKind = "plugins.recommendations"
     try snapshot(Dashboard(model: fixture.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("recommendations.png"))
@@ -379,4 +379,10 @@ private func snapshot<V: View>(_ view: V, size: CGSize, to url: URL, scheme: Col
     defer { pending.cleanup() }
     pending.model.isDesignPreview = true; pending.model.showingSavings = true
     try snapshot(Dashboard(model: pending.model), size: CGSize(width: 1048, height: 786), to: destination.appendingPathComponent("workbench-pending.png"), scheme: .light)
+}
+
+@Test func appearanceThemeResolvesExplicitAndSystemModes() {
+    #expect(AppTheme.system.colorScheme == nil)
+    #expect(AppTheme.light.colorScheme == .light)
+    #expect(AppTheme.dark.colorScheme == .dark)
 }

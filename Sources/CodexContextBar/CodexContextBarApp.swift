@@ -5,6 +5,7 @@ import SwiftUI
 @main
 struct CodexContextBarApp: App {
     @State private var model = AppModel()
+    @AppStorage("appTheme") private var theme = AppTheme.system
     private static let menuBarIcon: NSImage = {
         let image = NSImage(contentsOf: Bundle.module.url(forResource: "MenuBarIcon", withExtension: "pdf")!)!
         image.size = NSSize(width: 18, height: 18)
@@ -15,6 +16,7 @@ struct CodexContextBarApp: App {
     var body: some Scene {
         MenuBarExtra {
             MenuContent(model: model).environment(\.locale, model.language.locale).environment(\.appLanguage, model.language)
+                .preferredColorScheme(theme.colorScheme)
         } label: {
             Image(nsImage: Self.menuBarIcon)
                 .accessibilityLabel("Context Bar")
@@ -23,6 +25,7 @@ struct CodexContextBarApp: App {
 
         Window("Context Bar", id: "dashboard") {
             Dashboard(model: model).environment(\.locale, model.language.locale).environment(\.appLanguage, model.language)
+                .preferredColorScheme(theme.colorScheme)
         }
         .defaultSize(width: 1048, height: 786)
         .windowResizability(.contentMinSize)

@@ -1,9 +1,29 @@
 import AppKit
 import SwiftUI
 
+enum AppTheme: String, CaseIterable {
+    case system, light, dark
+
+    var title: String {
+        switch self {
+        case .system: "跟随系统"
+        case .light: "浅色"
+        case .dark: "深色"
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+}
+
 /// Native window blur stays opaque to interaction; the slider adjusts its tinted backing.
 struct GlassBackground: View {
-    @AppStorage("glassTransparency") private var transparency = 0.65
+    @AppStorage("glassTransparency") private var transparency = 0.85
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -14,7 +34,7 @@ struct GlassBackground: View {
             } else {
                 FrostedWindowMaterial(scheme: colorScheme)
                 Color(nsColor: .windowBackgroundColor)
-                    .opacity(1 - min(max(transparency, 0), 0.85))
+                    .opacity(1 - min(max(transparency, 0), 1))
                 LinearGradient(colors: [.white.opacity(colorScheme == .dark ? 0.06 : 0.22), .clear],
                     startPoint: .topLeading, endPoint: .bottomTrailing)
             }
@@ -72,7 +92,7 @@ struct GlassAppearanceControl: View {
 }
 
 struct GlassAppearancePanel: View {
-    @AppStorage("glassTransparency") private var transparency = 0.65
+    @AppStorage("glassTransparency") private var transparency = 0.85
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.appLanguage) private var language
 
@@ -85,7 +105,7 @@ struct GlassAppearancePanel: View {
                 Text("\(Int((transparency * 100).rounded()))%")
                     .monospacedDigit().foregroundStyle(InspectorTheme.secondary)
             }
-            Slider(value: $transparency, in: 0...0.85)
+            Slider(value: $transparency, in: 0...1)
                 .accessibilityLabel(language.text("背景透明度"))
                 .accessibilityValue("\(Int((transparency * 100).rounded()))%")
                 .disabled(reduceTransparency)
@@ -94,10 +114,10 @@ struct GlassAppearancePanel: View {
                 Spacer()
                 Text(language.text("更通透"))
             }.font(.caption).foregroundStyle(InspectorTheme.secondary)
-            Text(language.text(reduceTransparency ? "系统已开启“减少透明度”，当前使用实色背景。" : "跟随系统明暗主题。通透度即时保存，并保留可读底色；文字与按钮不透明。"))
+            Text(language.text(reduceTransparency ? "系统已开启“减少透明度”，当前使用实色背景。" : "通透度即时保存。100% 移除底色，保留系统模糊；文字与按钮不透明。"))
                 .font(.caption).foregroundStyle(InspectorTheme.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Button(language.text("恢复默认")) { transparency = 0.65 }
+            Button(language.text("恢复默认")) { transparency = 0.85 }
         }
         .padding(22).frame(width: 290)
         .foregroundStyle(InspectorTheme.text)
