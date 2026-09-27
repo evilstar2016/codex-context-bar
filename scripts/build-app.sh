@@ -8,6 +8,7 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp "$BIN_DIR/CodexContextBar" "$APP_DIR/Contents/MacOS/CodexContextBar"
 cp -R "$BIN_DIR/CodexContextBar_CodexContextBar.bundle" "$APP_DIR/Contents/Resources/"
 cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
+cp LICENSE THIRD_PARTY_NOTICES.md "$APP_DIR/Contents/Resources/"
 ICONSET="$PWD/build/AppIcon.iconset"
 mkdir -p "$ICONSET"
 for size in 16 32 128 256 512; do

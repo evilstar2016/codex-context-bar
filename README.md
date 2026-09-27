@@ -10,7 +10,7 @@
 
 一个专为 **Codex** 打造的原生 macOS 菜单栏工具：查看本机会话中的上下文说明、估算历史用量与潜在节省，预览配置修改，再通过新任务的日志检查结果。
 
-独立社区项目，与 OpenAI 无隶属关系，也未获其背书。当前为早期版本，建议从源码构建并先阅读下方的兼容说明。
+独立社区项目，与 OpenAI 无隶属关系，也未获其背书。请先阅读下方的兼容说明。
 
 ![Codex Context Bar 项目概览](docs/design/workbench-light.png)
 
@@ -31,9 +31,15 @@ Codex Context Bar 把这些信息放进一个本地工作流：**观察 → 预�
 - **保持本地处理**：应用运行时不联网、不上传会话、不读取登录凭据；安装与构建会下载依赖。
 - **原生 macOS 体验**：SwiftUI、菜单栏入口、中英双语、系统 / 浅色 / 深色主题、0–100% 磨砂玻璃透明度，默认 85%。
 
+## 安装
+
+从 [GitHub Releases](https://github.com/evilstar2016/codex-context-bar/releases/latest) 下载 DMG：Apple Silicon 选择 `arm64`，Intel 选择 `x86_64`。打开后将应用拖入 Applications，启动后从菜单栏图标进入。也提供 ZIP 和 SHA-256 校验文件。
+
+发行包为 ad-hoc 签名，未经 Developer ID 签名或 Apple 公证，首次启动可能受到系统拦截；请先确认来源和校验值，再按发行说明使用系统允许打开的入口。目前没有自动更新。
+
 ## 从源码运行
 
-需要 macOS 14+、Swift 6.0+（Xcode 16+）。已在 Apple Silicon、Xcode 26.2 / Swift 6.2.3 上验证构建。构建脚本生成当前机器架构的应用；Intel 尚未完成验证。
+需要 macOS 14+、Swift 6.0+（Xcode 16+）。已在 Apple Silicon、Xcode 26.2 / Swift 6.2.3 上验证构建。构建脚本生成当前机器架构的应用；发行流程分别在 Apple Silicon 和 Intel GitHub runner 上测试、构建；真实桌面体验仍需对应设备验证。
 
 ```sh
 git clone https://github.com/evilstar2016/codex-context-bar.git

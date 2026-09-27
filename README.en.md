@@ -10,7 +10,7 @@
 
 A native macOS menu bar app for **Codex**. Inspect context instructions in local session logs, estimate historical usage and potential savings, preview configuration changes, and check the results against a fresh task.
 
-An independent community project, not affiliated with or endorsed by OpenAI. This is an early version intended for source builds.
+An independent community project, not affiliated with or endorsed by OpenAI. Read the compatibility notes before use.
 
 ![Project overview](docs/design/workbench-light.png)
 
@@ -25,9 +25,15 @@ An independent community project, not affiliated with or endorsed by OpenAI. Thi
 - Processes data locally. The running app does not connect to the network, upload sessions or read login credentials. Building downloads dependencies.
 - Uses native SwiftUI, Chinese/English UI, system/light/dark themes, and adjustable frosted glass from 0–100% (85% by default).
 
+## Install
+
+Download a DMG from [GitHub Releases](https://github.com/evilstar2016/codex-context-bar/releases/latest): **arm64** for Apple Silicon or **x86_64** for Intel. Drag the app to Applications and launch it from its menu bar icon. ZIP archives and SHA-256 checksum files are also available.
+
+Packages are ad-hoc signed, not Developer ID-signed or Apple-notarized. macOS may block the first launch; verify the source and checksum before using the system-provided Open Anyway option described in the release notes. There is no automatic updater.
+
 ## Build and run
 
-Requires macOS 14+ and Swift 6.0+ (Xcode 16+). Builds have been verified on Apple Silicon with Xcode 26.2 / Swift 6.2.3. The script builds for the host architecture; Intel has not been validated.
+Requires macOS 14+ and Swift 6.0+ (Xcode 16+). Builds have been verified on Apple Silicon with Xcode 26.2 / Swift 6.2.3. The script builds for the host architecture; the release workflow tests and builds on separate Apple Silicon and Intel GitHub runners, without claiming complete live desktop validation.
 
 ```sh
 git clone https://github.com/evilstar2016/codex-context-bar.git
